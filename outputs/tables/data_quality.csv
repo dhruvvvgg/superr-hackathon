@@ -62,3 +62,5 @@ stage,check,claimed,observed,status,note
 03_win_prob,out-of-fold log loss beats state-free baseline,0.6937,0.522,pass,lower is better
 03_win_prob,max calibration gap in dense bins (n>=5000) <= 0.03,0.03,0.0259,pass,10 equal-width bins per innings; bins outside 2 sd of match-bootstrap noise: 0 of 20
 03_win_prob,every match scored by a model that did not see it,True,True,pass,5 folds grouped by match_id
+08_robustness,"top-10 batters: 10 unique ids, every name in the mapping file",True,True,pass,
+08_robustness,"top-10 bowlers: 10 unique ids, every name in the mapping file",True,True,pass,

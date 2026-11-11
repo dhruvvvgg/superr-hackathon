@@ -178,13 +178,13 @@ class Prep:
         self.recent = np.bincount(self.pi[recent], minlength=P) > 0
         self.n_matches = np.bincount(np.unique(np.c_[self.pi[faced], self.mi[faced]], axis=0)[:, 0], minlength=P)
 
-    def eligible(self, scale=1.0, min_pool=None):
+    def eligible(self, scale=1.0, require_recent=True):
         e = CFG["eligibility"]
         pre = "bat" if self.role == "bat" else "bowl"
         nb = e[f"{pre}_min_pressure_balls"] * scale
         ni = e[f"{pre}_min_pressure_{'innings' if pre == 'bat' else 'spells'}"] * scale
         return ((self.n_press >= nb) & (self.n_press_inn >= ni) & (self.n_total >= e["min_total_balls"] * scale)
-                & self.recent)
+                & (self.recent if require_recent else True))
 
 
 # ---- empirical Bayes helpers ---------------------------------------------------------------------------
