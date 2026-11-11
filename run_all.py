@@ -5,7 +5,7 @@ import sys
 import time
 
 STAGES = ["01_profile", "02_build_state", "03_win_prob", "04_pressure", "05_expected", "06_attribution",
-          "07_ratings", "08_robustness", "09_rr_fit"]
+          "07_ratings", "08_robustness", "09_rr_fit", "10_audit", "11_report"]
 
 
 def main():

@@ -101,6 +101,8 @@ def main():
                                 default=W["ipl"])
         t["team_id"] = t[own]
         t["team_season"] = t[own].astype(str) + "_" + t.year.astype(str)
+        other = "bowling_team_id" if own == "batting_team_id" else "batting_team_id"
+        t["opp_team_season"] = t[other].astype(str) + "_" + t.year.astype(str)
     batc["player_id"] = batc.player_id.astype(int)
     print(f"  batter records: {len(batc)} ({int(batc.faced.sum())} faced); bowler slots: {len(s)}")
     print(f"  mean NRAE per ball: batters {batc[batc.faced == 1].nrae.mean():+.4f}, bowlers {s.nrae.mean():+.4f}")

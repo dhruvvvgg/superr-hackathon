@@ -29,6 +29,9 @@ class Prep:
         self.opps, self.oi = _codes(d.opp_id.values)
         self.tss, self.ti = _codes(d.team_season.values)
         self.venues, self.vi = _codes(d.venue_id.values)
+        self.use_ots = bool(CFG["ridge"].get("opp_team_season")) and "opp_team_season" in d
+        if self.use_ots:
+            self.otss, self.oti = _codes(d.opp_team_season.values)
         self.matches, self.mi = _codes(d.match_id.values)
         self.P = len(self.players)
         self.press = d[pcol].values.astype(bool)
@@ -53,8 +56,11 @@ class Prep:
         n, P = self.n, self.P
         self.off = {}
         col = 4
-        for name, size in [("player", P), ("delta", P), ("opp", len(self.opps)), ("ts", len(self.tss)),
-                           ("venue", len(self.venues))]:
+        groups = [("player", P), ("delta", P), ("opp", len(self.opps)), ("ts", len(self.tss)),
+                  ("venue", len(self.venues))]
+        if self.use_ots:
+            groups.append(("ots", len(self.otss)))
+        for name, size in groups:
             self.off[name] = (col, col + size)
             col += size
         self.K = col
@@ -65,6 +71,8 @@ class Prep:
                 self.off["opp"][0] + self.oi, self.off["ts"][0] + self.ti, self.off["venue"][0] + self.vi]
         vals = [np.ones(n), self.press.astype(float), self.tier_t20i, self.tier_a, np.ones(n),
                 np.ones(int(self.press.sum())), np.ones(n), np.ones(n), np.ones(n)]
+        if self.use_ots:
+            rows.append(r); cols.append(self.off["ots"][0] + self.oti); vals.append(np.ones(n))
         self.X = sp.csr_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))),
                                shape=(n, self.K))
 
@@ -72,7 +80,9 @@ class Prep:
         pen = np.full(self.K, 1e-6)
         ratio = CFG["ridge"]["lambda_nuisance_ratio"]
         for name, lam in [("player", lam_main), ("delta", lam_delta), ("opp", lam_main),
-                          ("ts", lam_main * ratio), ("venue", lam_main * ratio)]:
+                          ("ts", lam_main * ratio), ("venue", lam_main * ratio), ("ots", lam_main * ratio)]:
+            if name not in self.off:
+                continue
             a, b = self.off[name]
             pen[a:b] = lam
         return pen
@@ -90,6 +100,8 @@ class Prep:
         beta = cho_solve(cho_factor(G, overwrite_a=True, check_finite=False), c, check_finite=False)
         a, b = self.off["player"]
         a2, b2 = self.off["delta"]
+        e = self.y - self.X @ beta
+        self.sigma2 = float(np.sum(w * e * e) / max(w.sum(), 1e-9))     # residual variance per unit weight
         return beta[a:b], beta[a2:b2], beta
 
     def cv_lambdas(self, grid_main=None, grid_delta=None):
@@ -231,6 +243,10 @@ def _beta_shrink(H, N, pool):
     return (H + m * ab) / (N + ab), m, ab
 
 
+def _beta_sd(m, ab):
+    return float(np.sqrt(max(m * (1 - m), 0.0) / (ab + 1.0))) if np.isfinite(ab) else 0.0
+
+
 def rate(prep, lam_main, lam_delta, mult=None):
     """Per-player components. mult: optional per-match multiplicities (bootstrap)."""
     P = prep.P
@@ -248,13 +264,17 @@ def rate(prep, lam_main, lam_delta, mult=None):
     m_n, v_n, _ = _cluster_mean(gn, "S_y", k, P)
     out["raw_press_nrae100"] = 100 * m_p
     out["raw_normal_nrae100"] = 100 * m_n
+    prior = dict(level=100 * np.sqrt(prep.sigma2 / lam_main + prep.sigma2 / lam_delta),
+                 delta=100 * np.sqrt(prep.sigma2 / lam_delta))
     lev_eb, mu_l, tau_l = _eb(100 * m_p, 1e4 * v_p, pool)
     out["level_eb"] = lev_eb - mu_l
-    d_eb, mu_d, _ = _eb(100 * (m_p - m_n), 1e4 * (v_p + v_n), pool)
+    d_eb, mu_d, tau_d = _eb(100 * (m_p - m_n), 1e4 * (v_p + v_n), pool)
+    prior["level_eb"], prior["delta_eb"] = float(np.sqrt(tau_l)), float(np.sqrt(tau_d))
     out["delta_eb"] = d_eb - mu_d
     m_w, v_w, _ = _cluster_mean(gp, "S_wpa", k, P)
     out["raw_press_wpa100"] = 100 * m_w
-    imp, mu_i, _ = _eb(100 * m_w, 1e4 * v_w, pool)
+    imp, mu_i, tau_i = _eb(100 * m_w, 1e4 * v_w, pool)
+    prior["impact"] = float(np.sqrt(tau_i))
     out["impact"] = imp
     out["press_weight"] = N_p
 
@@ -264,20 +284,31 @@ def rate(prep, lam_main, lam_delta, mult=None):
     H = np.bincount(g["player"], ki * g["hit"], minlength=P)
     B = np.bincount(g["player"], ki * g["bad"], minlength=P)
     pool_i = prep.n_press_inn >= 5
-    hit, _, _ = _beta_shrink(H, Nn, pool_i)
-    bad, _, _ = _beta_shrink(B, Nn, pool_i)
+    hit, m_h, ab_h = _beta_shrink(H, Nn, pool_i)
+    bad, m_b, ab_b = _beta_shrink(B, Nn, pool_i)
+    prior["consistency"] = float(np.sqrt(_beta_sd(m_h, ab_h) ** 2 + _beta_sd(m_b, ab_b) ** 2))
     out["hit_rate"] = hit
     out["downside"] = bad
     out["consistency"] = hit - bad
     out["raw_hit_rate"] = np.where(Nn > 0, H / np.maximum(Nn, 1e-12), np.nan)
     out["raw_downside"] = np.where(Nn > 0, B / np.maximum(Nn, 1e-12), np.nan)
+    out.attrs["prior_sd"] = prior
     return out
 
 
-def composite(tab, eligible, weights=None, estimator="ridge"):
-    """z-score the four components among eligible players and combine. Returns a copy of the eligible
-    rows with z columns, rating and rank."""
+def composite(tab, eligible, weights=None, estimator="ridge", standardise=None):
+    """Standardise the four components among eligible players and combine. Returns a copy of the
+    eligible rows with z columns, rating and rank.
+
+    standardise='zscore'   (pre-registered) centre and divide by the SD of the shrunk values among
+                           eligible players. Every component then has unit spread whatever its signal.
+    standardise='prior_sd' centre and divide by the estimated between-player SD of the true quantity
+                           (the prior SD of the shrinkage model). A component the data cannot separate
+                           players on then has a small spread and moves the rating little.
+    """
     cw = weights or CFG["composite_weights"]
+    standardise = standardise or CFG.get("composite", {}).get("standardise", "zscore")
+    prior = tab.attrs.get("prior_sd", {})
     t = tab[eligible].copy()
     src = {"level": "level", "impact": "impact", "consistency": "consistency", "delta": "delta"}
     if estimator == "eb":
@@ -285,7 +316,7 @@ def composite(tab, eligible, weights=None, estimator="ridge"):
     rating = np.zeros(len(t))
     for c in COMPONENTS:
         x = t[src[c]].values.astype(float)
-        sd = np.nanstd(x)
+        sd = np.nanstd(x) if standardise == "zscore" else float(prior.get(src[c], 0.0))
         z = (x - np.nanmean(x)) / sd if sd > 1e-12 else np.zeros(len(t))
         t[f"z_{c}"] = z
         rating += cw[c] * z

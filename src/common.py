@@ -8,17 +8,33 @@ import pandas as pd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(ROOT, "data", "raw")
-INTERIM = os.path.join(ROOT, "data", "interim")
-PROCESSED = os.path.join(ROOT, "data", "processed")
-TABLES = os.path.join(ROOT, "outputs", "tables")
-FIGURES = os.path.join(ROOT, "outputs", "figures")
+# SUPERR_TAG redirects every derived file to a side directory so that phase 2 experiments never
+# overwrite the main outputs. SUPERR_OVERRIDES is a JSON dict of dotted config keys.
+TAG = os.environ.get("SUPERR_TAG", "")
+if TAG:
+    INTERIM = os.path.join(ROOT, "data", "experiments", TAG, "interim")
+    PROCESSED = os.path.join(ROOT, "data", "experiments", TAG, "processed")
+    TABLES = os.path.join(ROOT, "data", "experiments", TAG, "tables")
+    FIGURES = os.path.join(ROOT, "data", "experiments", TAG, "figures")
+else:
+    INTERIM = os.path.join(ROOT, "data", "interim")
+    PROCESSED = os.path.join(ROOT, "data", "processed")
+    TABLES = os.path.join(ROOT, "outputs", "tables")
+    FIGURES = os.path.join(ROOT, "outputs", "figures")
 for _d in (INTERIM, PROCESSED, TABLES, FIGURES):
     os.makedirs(_d, exist_ok=True)
 
 
 def load_config():
     with open(os.path.join(ROOT, "config.json")) as f:
-        return json.load(f)
+        cfg = json.load(f)
+    for key, value in json.loads(os.environ.get("SUPERR_OVERRIDES", "{}")).items():
+        node = cfg
+        parts = key.split(".")
+        for part in parts[:-1]:
+            node = node[part]
+        node[parts[-1]] = value
+    return cfg
 
 
 CFG = load_config()

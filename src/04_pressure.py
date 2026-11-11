@@ -89,10 +89,21 @@ def main():
                               d.runs_last12.values - d.r12_drop.values + r,
                               d.wkts_last12.values - d.w12_drop.values + wkt,
                               np.where(r == 0, d.dot_streak.values + 1, 0), d.venue_avg.values, tier_code[msk])
-            lev[msk] += P[msk, j] * np.abs(w_new - d.wp_before.values)
+            dw = w_new - d.wp_before.values
+            lev[msk] += P[msk, j] * (np.abs(dw) if CFG["leverage"]["kind"] == "mean_abs" else dw * dw)
+    if CFG["leverage"]["kind"] != "mean_abs":
+        lev = np.sqrt(lev)                      # root-mean-square swing
     b["leverage_raw"] = lev
     b["leverage"] = lev / lev.mean()
     print(f"  mean raw leverage (expected |dWP| per ball): {lev.mean():.4f}")
+    from scipy.stats import spearmanr as _sp
+    lev_valid = pd.DataFrame([dict(
+        leverage_kind=CFG["leverage"]["kind"],
+        spearman_leverage_vs_realised_abs_wpa=_sp(lev, b.wpa.abs()).statistic,
+        pearson_leverage_vs_realised_abs_wpa=np.corrcoef(lev, b.wpa.abs())[0, 1],
+        mean_abs_wpa_top20pct=b.wpa.abs()[lev >= np.quantile(lev, 0.8)].mean(),
+        mean_abs_wpa_bottom50pct=b.wpa.abs()[lev < np.quantile(lev, 0.5)].mean())])
+    save_table(lev_valid, "leverage_validity.csv")
 
     b["pscore"] = b.groupby("innings").leverage.rank(pct=True) * 100
     b["pscore_global"] = b.leverage.rank(pct=True) * 100

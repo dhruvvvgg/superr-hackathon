@@ -1,0 +1,11 @@
+match_id,date,result_string,innings1,innings2,reconstructed_result,winner_and_wickets_agree,run_margin_error,reduced_or_excluded,target_used
+14110,2022-04-09,Sunrisers Hyderabad won by 8 wickets,Chennai Super Kings 154/7 (20.0 ov),Sunrisers Hyderabad 155/2 (17.4 ov),Sunrisers Hyderabad won by 8 wickets,True,,False,155.231
+14130,2022-04-24,Lucknow Super Giants Won 36  Runs,Lucknow Super Giants 167/6 (19.5 ov),Mumbai Indians 127/8 (19.5 ov),Lucknow Super Giants won by 40 runs,True,3.76923,True,168
+17558,2022-09-30,England Won by 8 Wickets,Pakistan 169/6 (20.0 ov),England 170/2 (14.3 ov),England won by 8 wickets,True,,False,170.231
+28961,2024-01-14,India Won by 6 Wickets,Afghanistan 170/10 (20.0 ov),India 173/4 (15.4 ov),India won by 6 wickets,True,,False,173
+32619,2024-05-27,West Indies Won by 8 wickets,South Africa 160/7 (20.0 ov),West Indies 162/2 (13.5 ov),West Indies won by 8 wickets,True,,False,162
+40696,2025-03-23,Chennai Super Kings Won by 4 wickets,Mumbai Indians 153/9 (20.0 ov),Chennai Super Kings 156/6 (19.1 ov),Chennai Super Kings won by 4 wickets,True,,False,155
+45499,2025-09-13,Sri Lanka Won by 6 wickets,Bangladesh 138/5 (20.0 ov),Sri Lanka 129/4 (14.4 ov),Sri Lanka won by 6 wickets,True,,False,128.692
+48016,2025-11-14,India A Won by 148 runs,India A 297/4 (20.0 ov),United Arab Emirates 145/7 (20.0 ov),India A won by 153 runs,True,4.69231,False,293.769
+49739,2026-03-22,South Africa Won by 19 runs,South Africa 164/5 (20.0 ov),New Zealand 145/10 (18.5 ov),South Africa won by 20 runs,True,0.769231,False,164.538
+45392,2026-07-07,England Won by 125 runs,England 201/7 (20.0 ov),India 76/10 (11.4 ov),England won by 125 runs,True,0.461538,False,202

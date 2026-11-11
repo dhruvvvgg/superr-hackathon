@@ -20,8 +20,9 @@ from wp_lib import TIER_CODE
 PHASE_CODE = {"powerplay": 0, "middle": 1, "death": 2}
 BASE_FEATS = ["innings", "phase_c", "balls_left", "wkts_before", "crr", "rrr", "rrr_gap", "venue_avg",
               "tier_c", "is_pace", "bowl_type_c", "bat_lhb"]
-BAT_FEATS = BASE_FEATS + ["is_noball_i", "free_hit_i"]
-BOWL_FEATS = BASE_FEATS + ["free_hit_i"]
+ROLE_FEATS = ["bf_before", "batting_order"] if CFG.get("baseline", {}).get("role_aware") else []
+BAT_FEATS = BASE_FEATS + ["is_noball_i", "free_hit_i"] + ROLE_FEATS
+BOWL_FEATS = BASE_FEATS + ["free_hit_i"] + ROLE_FEATS
 
 PARAMS = dict(learning_rate=0.05, n_estimators=300, num_leaves=31, min_child_samples=300,
               subsample=0.8, subsample_freq=1, colsample_bytree=0.9, reg_lambda=5.0,
@@ -63,6 +64,9 @@ def main():
     b = checked_merge(b, pr, "deliveries+pressure", on=["match_id", "innings", "innings_ball_num"],
                       how="left", validate="1:1")
     b = add_feats(b)
+    # balls already faced by the striker in this innings (wides are not faced)
+    nw = (~b.is_wide).astype(int)
+    b["bf_before"] = nw.groupby([b.match_id, b.innings, b.striker_id]).cumsum() - nw
     bowler_w = set(CFG["bowler_wickets"])
     no_cost = set(CFG["non_batter_cost_dismissals"])
     b["wkt_cost"] = b.is_wicket & ~b.dismissal_type.isin(no_cost)          # counts against a batter
