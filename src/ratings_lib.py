@@ -20,7 +20,7 @@ def _codes(values):
 
 
 class Prep:
-    def __init__(self, df, role, pcol="pA", use_recency=True, use_comp_weight=True):
+    def __init__(self, df, role, pcol="pA", use_recency=True, use_comp_weight=True, lev_alpha=None):
         self.role = role
         self.pcol = pcol
         d = df.reset_index(drop=True)
@@ -44,6 +44,12 @@ class Prep:
             w = w * d.w_recency.values
         if use_comp_weight:
             w = w * d.w_comp.values
+        if lev_alpha is None:
+            lev_alpha = CFG["ridge"].get("lev_alpha", 0.0)
+        self.lev_alpha = lev_alpha
+        if lev_alpha:
+            w = w * np.clip(d.leverage.values.astype(float), 0.05, 10.0) ** lev_alpha
+            w = w / w.mean() * (self.w0_mean if hasattr(self, "w0_mean") else 1.0)
         self.w0 = w
         self.tier_t20i = (d.tier.values == "T20I").astype(float)
         self.tier_a = (d.tier.values == "A-team").astype(float)

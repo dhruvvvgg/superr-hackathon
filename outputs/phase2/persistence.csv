@@ -1,0 +1,7 @@
+role,split,n_common,spearman_rating,spearman_level,spearman_impact,spearman_consistency,spearman_delta,spearman_brown_rating,sd_rating,sd_level,sd_impact,sd_consistency,sd_delta
+batter,season split (2022-24 vs 2025-26),96,0.0324335,0.107732,-0.0470022,0.0868828,-0.0934617,0.0628293,,,,,
+batter,odd/even match split,145,0.072217,0.113592,0.00445205,0.00103133,0.0334908,0.134706,,,,,
+batter,random half splits (mean of 20),139.3,0.0599963,0.133741,-0.00520535,0.0519232,0.0245409,0.113201,0.076382,0.0639196,0.0509047,0.0677998,0.0865615
+bowler,season split (2022-24 vs 2025-26),104,0.203585,0.242825,0.147776,0.109613,0.0718447,0.338297,,,,,
+bowler,odd/even match split,153,0.0871195,0.154125,0.151602,-0.00959953,-0.0731642,0.160276,,,,,
+bowler,random half splits (mean of 20),150.65,0.119007,0.192812,0.0968172,0.0830856,-0.00815174,0.212701,0.0767782,0.0617039,0.0604579,0.0640522,0.0775493

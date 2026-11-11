@@ -34,6 +34,10 @@ def configs():
     for v, lab in [("B", "B contested-state rule"), ("C", "C leverage pct >= 90"), ("D", "D leverage pct >= 70"),
                    ("E", "E death overs, WP 0.2-0.8"), ("F", "F global leverage pct >= 80")]:
         c.append(dict(name=lab, family="pressure definition", pcol="p" + v))
+    c.append(dict(name="no leverage weighting", family="pressure definition", prep_kw=dict(lev_alpha=0.0)))
+    c.append(dict(name="leverage weight power 0.5", family="pressure definition", prep_kw=dict(lev_alpha=0.5)))
+    c.append(dict(name="leverage weight power 2", family="pressure definition", prep_kw=dict(lev_alpha=2.0)))
+    c.append(dict(name="spec weights 0.40/0.25/0.20/0.15", family="weights", weights=CFG["composite_weights_spec"]))
     c.append(dict(name="eligibility x0.5", family="eligibility", scale=0.5))
     c.append(dict(name="eligibility x1.5", family="eligibility", scale=1.5))
     c.append(dict(name="recency off", family="weights", prep_kw=dict(use_recency=False)))
@@ -49,7 +53,7 @@ def run_config(df, role, lam, cfg):
     d = df[cfg["subset"](df)] if "subset" in cfg else df
     prep = Prep(d, role, pcol=cfg.get("pcol", "pA"), **cfg.get("prep_kw", {}))
     elig = prep.eligible(cfg.get("scale", 1.0))
-    t = composite(rate(prep, lam[0], lam[1]), elig, estimator=cfg.get("estimator", "ridge"))
+    t = composite(rate(prep, lam[0], lam[1]), elig, weights=cfg.get("weights"), estimator=cfg.get("estimator", "ridge"))
     return t
 
 

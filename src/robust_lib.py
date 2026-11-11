@@ -71,8 +71,10 @@ def random_splits(match_ids, n, seed=SEED):
 
 
 def dirichlet_weights(n, seed=SEED):
-    cw = CFG["composite_weights"]
-    base = np.array([cw[c] for c in COMPONENTS])
+    """Row 0 is the primary weights. The other rows are Dirichlet draws centred on the sensitivity
+    weights, which put some mass on every component so the grid tests what the other components would do."""
+    prim = np.array([CFG["composite_weights"][c] for c in COMPONENTS])
+    base = np.array([CFG.get("sensitivity_weights", CFG["composite_weights"])[c] for c in COMPONENTS])
     rng = np.random.RandomState(seed + 5)
     draws = rng.dirichlet(CFG["robustness"]["dirichlet_concentration"] * base, size=n)
-    return np.vstack([base, draws])
+    return np.vstack([prim, draws])

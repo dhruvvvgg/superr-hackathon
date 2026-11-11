@@ -85,13 +85,14 @@
       30000
     ],
     "lambda_nuisance_ratio": 1.0,
-    "opp_team_season": false
+    "opp_team_season": false,
+    "lev_alpha": 1.0
   },
   "composite_weights": {
-    "level": 0.4,
-    "impact": 0.25,
-    "consistency": 0.2,
-    "delta": 0.15
+    "level": 1.0,
+    "impact": 0.0,
+    "consistency": 0.0,
+    "delta": 0.0
   },
   "eligibility": {
     "bat_min_pressure_balls": 60,
@@ -128,5 +129,17 @@
         "evidence": "ESPNcricinfo and other scorecards: SRH 121/8, LSG 127/5 in 16 overs; the ball data agrees (5 wickets lost)"
       }
     }
+  },
+  "composite_weights_spec": {
+    "level": 0.4,
+    "impact": 0.25,
+    "consistency": 0.2,
+    "delta": 0.15
+  },
+  "sensitivity_weights": {
+    "level": 0.7,
+    "impact": 0.1,
+    "consistency": 0.1,
+    "delta": 0.1
   }
 }
