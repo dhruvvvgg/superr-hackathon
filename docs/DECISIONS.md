@@ -122,3 +122,134 @@ Written before computing any player estimate. Anything changed later is logged i
 14. **Model-quality yardsticks for any later change**: out-of-fold log loss and calibration, split-half
     reliability of the ratings (mean Spearman correlation over 20 random match-half splits), season-split
     persistence, and bootstrap rank stability. Never the identity of the players in the list.
+
+## C. Changes made while building phase 1 (after the pre-registration commit)
+
+**D-11 Win-probability model changed before any player estimate existed.** Pre-registration item 2 named a
+monotone LightGBM model. Out of fold it was clearly worse than a simple logistic model on a
+resource-adjusted margin: log loss 0.5327 against 0.5220 overall and 0.4164 against 0.3975 in chases
+(`outputs/tables/wp_model_metrics.csv`; an earlier, larger LightGBM setting scored 0.5567). Cause: every
+ball of a match shares one label, so trees memorise matches through continuous features such as target
+and venue average. The logistic model is also smooth, which matters because leverage is a difference of
+predictions. Adopted: per-innings logistic regression on a degree-2 polynomial of (resource margin, balls
+left, wickets lost, runs and wickets in the last 12 balls, dot streak), with the resource table fitted
+inside each training fold. The version without momentum features has the same log loss (0.5221); momentum
+is kept because the specification lists it in the match state. The decision was made on log loss and
+calibration only, before stage 05 onwards had been written. The LightGBM models stay in the metrics table.
+
+**D-12 Calibration tolerance.** With 809 matches, a 20-bin reliability table is dominated by match-level
+noise. The acceptance check uses 10 bins and counts a bin as dense at 5,000 deliveries. The largest dense
+gap is 0.026 and every bin is within two standard deviations of match-bootstrap noise
+(`wp_calibration_bins.csv`).
+
+**D-13 Resource curves must not cross.** The first fit of R_w(b) gave more expected runs with one wicket
+down than with none late in an innings (few observations with 0 or 1 wickets down and 6 overs left), so
+the wicket value was floored at zero there. A non-crossing penalty was added to the fit. Wicket values
+for few wickets down at the death remain close to zero because the data say so: with 36 balls left the
+observed remaining runs are 68.9, 69.2 and 68.4 for 0, 1 and 2 wickets down.
+
+**D-14 Two bowler wickets in one slot.** A stumping off a wide followed by a wicket on the legal ball of
+the same slot was being counted once (aggregation by max). Changed to a sum; found by an assertion that
+credited wickets equal bowler-type dismissals.
+
+**D-15 Level versus empirical Bayes agreement below 0.8.** Spearman 0.47 (batters) and 0.46 (bowlers) for
+Level, 0.85 and 0.84 for the composite. Investigated as the specification requires: the ridge Level is
+normal effect plus delta and uses all balls, the empirical Bayes Level uses pressure balls only. The
+difference is structural. No change made.
+
+**D-16 Ridge penalty at the edge of the grid.** For bowlers the delta penalty lands on the largest grid
+value (30,000) and the cross-validated error is flat beyond 3,000 for both groups. The grid was not
+extended in phase 1 because it was pre-registered; the meaning is that individual pressure deltas are not
+identifiable. See section D for the consequence.
+
+**D-17 Bootstrap design.** The eligible set and the ridge penalties are held fixed across resamples.
+Re-deciding eligibility inside each resample would change the pool being ranked and make rank intervals
+uninterpretable. The cost is intervals that are somewhat too narrow. Stated in FINDINGS.
+
+**D-18 Sensitivity grid design.** One-at-a-time structural changes from the primary (14 configurations),
+each crossed with 201 weight vectors (primary plus 200 Dirichlet draws, concentration 20). Grid top-10
+frequency is the mean over configurations with equal weight per configuration, so the 200 weight draws
+do not swamp the structural changes. A player who is not eligible in a configuration (for example an
+uncapped player in "T20I only") scores zero there. Rejected: full cross product, which is dominated by
+combinations nobody would run.
+
+**D-19 Decision rule tie case.** If a primary top-10 player is below 0.40 and no outsider is at or above
+0.40, he stays. The final list keeps primary order; a swapped-in outsider takes the position his primary
+rank gives him among the ten.
+
+**D-20 Persistence design.** Each half is rated from its own matches with thresholds at half scale and
+without the recent-appearance rule (the early half has no 2025 or 2026 matches by construction).
+
+**D-21 RR layer.** `context/rr_auction_context.md` was written from the data and a web search because it
+was not supplied. "Would displace" requires the candidate's 80% rating interval to lie entirely above
+the incumbent's interval. Overseas status is derived from the national side in the mapping file.
+Availability is "unknown, check after retention list" for everyone.
+
+## D. Phase 2a: audit of the phase 1 pipeline
+
+**Clean clone.** `git clone` into an empty directory, `python run_all.py`, `pytest`: every stage ran,
+24 tests passed (2 skipped because README and FINDINGS did not exist yet) and the seven main output
+tables were byte-identical to the working copy (`cmp`). Runtime 7.4 minutes with another job running.
+
+**Leakage hunt, item by item.**
+- Matches scored by a model that saw them: none. Folds are assigned per match; the fold model applied to
+  a match is the one trained without it, for realised and for hypothetical next-ball states. Tested.
+- Resource table inside the win-probability model: fitted on training folds only.
+- Expected runs and wickets: out of fold on the same match folds.
+- Venue average: leave-one-match-out for the match itself, but it uses matches from other folds. This
+  passes feature information, not labels, between folds. Left as is and listed as a limitation.
+- Wicket-value table and next-ball outcome frequencies: fitted once on all clean matches. They are
+  20-parameter and 54-number summaries with no player or result information. Left as is.
+- Result-anchored target: uses the result string to recover a quantity that was public before the chase.
+  Checked by test: chases won by wickets end at or above the target, chases lost by N end N+1 short.
+- Wides counted as balls faced: zero (assertion and test). Run outs credited to bowlers: zero.
+  Dismissals charged exactly once to `dismissed_player_id`: 10,379 of 10,379 costed wickets.
+- Super overs and reduced matches downstream: zero rows.
+- Duplicate ids, joins: every merge prints row counts and fails on any change; no player id has two
+  names; no duplicate deliveries or slots (`outputs/tables/audit_integrity.csv`).
+
+**Things the audit found.**
+- `playing_eleven.csv` holds 40 duplicated (match, team, player) rows, 83 striker appearances with no
+  playing-XI row, one delivery where striker equals non-striker and one bowler with 25 legal balls in an
+  innings. None affects a result: appearances are counted as distinct matches.
+- The audit sampler first drew an abandoned match and crashed; it now samples completed matches.
+- A stage-08 figure failed when a point rating lay outside its bootstrap interval. Fixed by clipping the
+  error bar; the cause (top-ranked players regress in resamples) is explained in FINDINGS.
+
+**Scorecards by hand.** Ten seeded random matches (`outputs/tables/audit_scorecards.csv`): winner and
+wickets agree with the result string in all ten; run-margin errors are +0.5 to +4.7 runs. One chase
+(match 45499) reconstructs to 129 when the target was 138 or more and the side won: runs are missing from
+the ball data for that innings. The anchored target absorbs this.
+
+**Implausible rankings, cause sought in the code before touching any parameter.**
+- Smallest pressure sample in a top 10: 85 balls (Vaibhav Sooryavanshi, 19 pressure innings). He passes
+  the pre-registered thresholds. His rating comes from the Level component, which is the ridge normal
+  effect plus delta, so it reflects 500-odd balls at a strike rate above 220, not 85 balls. No bug.
+- Associate opposition: the largest share of pressure balls against associates or A-teams among the
+  twenty listed players is 9%. No issue.
+- High-volume finishers ranked near the bottom (`face_validity.csv`). Cause found in the baseline: it
+  does not know how long the batter has been in. Residual bat runs per 100 balls are -26.8 on balls 1 to 3
+  of an innings, -4.2 on balls 4 to 6 and +10 after ball 12. A finisher faces a far larger share of
+  first balls than an opener, so the baseline is unfair to the role. This is tested as a model change in
+  section E (role-aware baseline), not patched.
+- Component scaling. After shrinkage the consistency component has a spread of 0.004 and the bowler delta
+  0.05 per 100 balls, yet z-scoring gives each of them the same spread as Level. Shrinkage removed the
+  noise and z-scoring put it back. Tested in section E.
+
+## E. Phase 2b: model changes, judged on model-quality evidence only
+
+**Adoption rule, written before any variant result was read.** Each variant is a full pipeline run in
+`data/experiments/<tag>/`, scored by `src/eval_quality.py` (`outputs/tables/phase2_experiments.csv`).
+- A change to the win-probability model, the target, the leverage definition or the baseline is adopted
+  only if its own out-of-fold metric improves (log loss, leverage versus realised swing, baseline RMSE
+  and log loss) and the split-half reliability of the rating does not fall by more than two standard
+  errors in either group.
+- A change to how ratings are built (opposition term, component scaling) is adopted only if split-half
+  reliability of the rating rises by more than two standard errors in at least one group, does not fall
+  by more than two standard errors in the other, and bootstrap stability (top-10 probability of the
+  top 10, 80% rank-interval width of the top 20) is not worse.
+- Split-half reliability is the mean Spearman correlation over 20 random match-half splits; its standard
+  error is the SD across splits divided by the square root of 20.
+- Who is in the top 10 is not looked at when deciding. The lists are compared only after the decision.
+- Any adopted change is a post-hoc change to the pre-registered specification, and the phase 1 results
+  stay in `outputs/phase1/`.
