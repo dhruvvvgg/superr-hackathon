@@ -1,0 +1,22 @@
+model,sample,n,log_loss,brier,max_calib_gap_dense_bins,mean_calib_gap,description,role
+respoly_mom,all,193336,0.522032,0.178082,0.02591,0.0121112,"respoly plus momentum features (last 12 balls, dot streak)",primary
+respoly_mom,innings 1,100745,0.636439,0.222849,0.02591,0.0177154,"respoly plus momentum features (last 12 balls, dot streak)",primary
+respoly_mom,innings 2,92591,0.39755,0.129372,0.0190918,0.00601345,"respoly plus momentum features (last 12 balls, dot streak)",primary
+respoly,all,193336,0.522114,0.17808,0.0355688,0.0144569,"logistic, degree-2 polynomial of resource margin z, balls left, wickets",comparison
+respoly,innings 1,100745,0.636102,0.222687,0.0355688,0.019898,"logistic, degree-2 polynomial of resource margin z, balls left, wickets",comparison
+respoly,innings 2,92591,0.398087,0.129545,0.0215841,0.0085367,"logistic, degree-2 polynomial of resource margin z, balls left, wickets",comparison
+resz,all,193336,0.524227,0.178411,0.0327009,0.0142601,logistic on resource margin z only,comparison
+resz,innings 1,100745,0.635827,0.222532,0.0327009,0.0199718,logistic on resource margin z only,comparison
+resz,innings 2,92591,0.402799,0.130404,0.0179741,0.00804545,logistic on resource margin z only,comparison
+mono,all,193336,0.532713,0.181028,0.0326927,0.00949496,"LightGBM, monotone constraints, raw state (originally pre-registered)",comparison
+mono,innings 1,100745,0.639606,0.224276,0.0101719,0.00699776,"LightGBM, monotone constraints, raw state (originally pre-registered)",comparison
+mono,innings 2,92591,0.416406,0.133972,0.0326927,0.0122121,"LightGBM, monotone constraints, raw state (originally pre-registered)",comparison
+free,all,193336,0.533705,0.181633,0.031092,0.0130934,"LightGBM, unconstrained, innings flag, raw state",comparison
+free,innings 1,100745,0.640476,0.22467,0.031092,0.0177214,"LightGBM, unconstrained, innings flag, raw state",comparison
+free,innings 2,92591,0.417532,0.134805,0.018454,0.00805789,"LightGBM, unconstrained, innings flag, raw state",comparison
+logit,all,193336,0.526313,0.179303,0.0375527,0.0123954,additive spline logistic regression on raw state,comparison
+logit,innings 1,100745,0.639286,0.224311,0.0375527,0.0154468,additive spline logistic regression on raw state,comparison
+logit,innings 2,92591,0.40339,0.130331,0.0248082,0.0090753,additive spline logistic regression on raw state,comparison
+base_rate,all,193336,0.693679,0.250265,0.0438133,0.00912697,state-free baseline (win rate of the batting side by innings),baseline
+base_rate,innings 1,100745,0.694245,0.250549,0.0438133,0.0174526,state-free baseline (win rate of the batting side by innings),baseline
+base_rate,innings 2,92591,0.693063,0.249956,6.81625e-05,6.81625e-05,state-free baseline (win rate of the batting side by innings),baseline

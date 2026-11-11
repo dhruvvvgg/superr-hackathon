@@ -1,0 +1,13 @@
+model,n,metric,oof,phase_mean_baseline,mean_actual,mean_pred
+batter xRuns,185928,RMSE,1.72002,1.73807,1.39336,1.39536
+batter xWkt,185928,log loss,0.207885,0.208826,0.0542414,0.0553309
+batter residual by tier: Low,93026,mean (actual - expected) runs per ball,-0.00316612,,1.37597,1.37914
+batter residual by tier: Normal,55854,mean (actual - expected) runs per ball,0.00859752,,1.39277,1.38418
+batter residual by tier: High,27815,mean (actual - expected) runs per ball,-0.0094329,,1.4242,1.43363
+batter residual by tier: Extreme,9233,mean (actual - expected) runs per ball,-0.0320726,,1.47915,1.51122
+bowler xRuns,185122,RMSE,1.75545,1.77388,1.4473,1.44835
+bowler xWkt,185122,log loss,0.204959,0.205427,0.0529435,0.0540239
+bowler residual by tier: Low,92236,mean (actual - expected) runs per ball,-0.00249995,,1.42864,1.43114
+bowler residual by tier: Normal,55532,mean (actual - expected) runs per ball,0.0110636,,1.44526,1.43419
+bowler residual by tier: High,28012,mean (actual - expected) runs per ball,-0.00986806,,1.47921,1.48908
+bowler residual by tier: Extreme,9342,mean (actual - expected) runs per ball,-0.0322865,,1.54794,1.58023

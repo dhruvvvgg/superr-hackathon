@@ -153,6 +153,7 @@ def main():
     b["bowler_runs"] = b.runs + np.where(b.is_wide | b.is_noball, b.extra_runs, 0.0)
     g = b.groupby(["match_id", "innings"], sort=False)
     b["score_before"] = g.total_runs.cumsum() - b.total_runs
+    b["rem_runs"] = g.total_runs.transform("sum") - b.score_before
     tot = g.total_runs.sum().unstack()
     m = checked_merge(m, tot.rename(columns={1: "tot_1", 2: "tot_2"}).reset_index(),
                       "matches+reconstructed totals", on="match_id", how="left")
@@ -226,8 +227,7 @@ def main():
     cs_w = g.is_wicket.cumsum() - b.is_wicket
     b["r12_drop"] = g.total_runs.shift(12, fill_value=0.0)
     b["w12_drop"] = g.is_wicket.shift(12, fill_value=False).astype(int)
-    b["runs_last12"] = cs_r - (g.total_runs.cumsum().shift(12).reindex(b.index).fillna(0.0)
-                               if False else (cs_r.groupby([b.match_id, b.innings]).shift(12, fill_value=0.0)))
+    b["runs_last12"] = cs_r - cs_r.groupby([b.match_id, b.innings]).shift(12, fill_value=0.0)
     b["wkts_last12"] = cs_w - cs_w.groupby([b.match_id, b.innings]).shift(12, fill_value=0)
     dot = (b.total_runs == 0).astype(int)
     grp_key = (b.match_id.astype(str) + "_" + b.innings.astype(str))

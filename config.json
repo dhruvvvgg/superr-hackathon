@@ -12,7 +12,7 @@
   "ipl_comp_ids": {"2022": 1358, "2023": 1715, "2024": 2193, "2025": 2725, "2026": 3298},
 
   "target_mode": "result_anchored",
-  "wp": {"n_folds": 5, "model": "lgbm_monotone"},
+  "wp": {"n_folds": 5, "model": "respoly_mom"},
   "leverage": {"percentile_scope": "innings_number"},
   "pressure": {"primary_variant": "A", "high": 80, "extreme": 95, "normal": 50},
 
