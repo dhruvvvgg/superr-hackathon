@@ -50,7 +50,7 @@ stage,check,claimed,observed,status,note
 02_build_state,legal balls per completed over == 6 (share),>= 0.999,0.99987,pass,4 of 30626 non-final overs differ; overs >6: 1
 02_build_state,innings with more than 120 legal balls,0,0.0,pass,
 02_build_state,complete first innings in clean matches have 120 legal balls or are all out,1.0,1.0,pass,
-02_build_state,wicket check: wickets lost in chase == 10 - N for 'won by N wickets',1.0,0.99761,FAIL,418/419 matches
+02_build_state,wicket check: wickets lost in chase == 10 - N for 'won by N wickets',1.0,1.0,pass,419/419 matches; one result string corrected from an outside source (D-24)
 02_build_state,"extras calibration MAE, fitted <= simple 1-run rule",2.1667,2.1416,pass,n=396 run-margin matches; out-of-sample MAE 2.168
 02_build_state,matches excluded: no ball data,,16.0,info,
 02_build_state,matches excluded: reduced (revised fields or DLS text),,38.0,info,

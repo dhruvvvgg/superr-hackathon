@@ -117,5 +117,16 @@
   },
   "composite": {
     "standardise": "zscore"
+  },
+  "source_overrides": {
+    "description": "Corrections to supplied data verified against an outside source. Applied in stage 02 and logged in DECISIONS.md D-24. Nothing else in the raw data is altered.",
+    "result_fixes": {
+      "20190": {
+        "res_n": 5,
+        "raw_result": "Lucknow Super Giants Won by 6 wickets",
+        "corrected": "Lucknow Super Giants won by 5 wickets",
+        "evidence": "ESPNcricinfo and other scorecards: SRH 121/8, LSG 127/5 in 16 overs; the ball data agrees (5 wickets lost)"
+      }
+    }
   }
 }

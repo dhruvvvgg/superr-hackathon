@@ -160,8 +160,9 @@ def main():
     A("- **Legal balls.** The specification's rule (\"other\" extras are legal) gives 244 overs with more than six "
       "legal balls. Treating \"other\" as a no-ball gives 1. The adopted rule is: illegal = wide, Overstep, other.")
     A(f"- **Wicket check.** {dq[dq.check.str.startswith('wicket check')].note.iloc[0]} agree with the result "
-      "string. The exception is match 20190, where the result string says 6 wickets and the ball data shows 5 "
-      "wickets down. This check does not depend on extras.")
+      "string. One result string was wrong: match 20190 (LSG v SRH, 7 April 2023) says 6 wickets, while the ball "
+      "data and five outside scorecards show LSG won by 5 wickets with 127/5. It is corrected by a documented "
+      "override in `config.json` (DECISIONS.md, D-24). This check does not depend on extras.")
     A(f"- **Extras calibration** (`extras_calibration.csv`). Fitted run values: wide {ex['run value: wide']:.2f}, "
       f"no-ball {ex['run value: Overstep']:.2f}, other no-ball {ex['run value: other']:.2f}, leg bye "
       f"{ex['run value: legbyes']:.2f}, bye {ex['run value: byes']:.2f}. On {int(T('extras_calibration.csv').set_index('item').n['margin MAE (runs), fitted'])} "
@@ -396,9 +397,9 @@ def main():
     A(md(short[["group", "rank", "player_name", "role", "main_phase", "ipl_2026_team", "overseas_derived", "boot_top10_prob", "displacement_call", "availability"]]) + "\n")
     A("**Squad-rule constraints.** This is a mini-auction, so a pick has to fit the slots and purse RR has left "
       "after releases; RR's remaining purse and open slots for 2027 are unknown until the lists are out. Sourced "
-      "in the context file: a squad holds at most 25 and at least 18 players, and RR filled all 25 places in the "
-      "2026 cycle. Not confirmed by any source: the overseas limits (the standard playing condition of at most 4 "
-      "overseas players in an XI is assumed). "
+      "in the context file: a squad holds at least 18 and at most 25 players with at most 8 overseas (2026 cycle, "
+      "several outlets; assumed unchanged for 2027), and RR filled all 25 places in 2026. The limit of 4 overseas "
+      "players in an XI rests on one weak source and is assumed. "
       f"RR's 2026 regulars already include {int(inc[inc.regular].overseas_derived.sum())} derived-overseas players, so "
       "an overseas pick has to displace one of them in the XI; Indian options on the shortlist are worth more "
       "to RR than their rating alone says. A mini-auction also has no right-to-match and few slots, which favours "
@@ -428,8 +429,10 @@ def main():
       "and is not used.")
     A("- **Fixed eligible set in the bootstrap** and penalties fixed at their cross-validated values: intervals "
       "are somewhat too narrow.")
-    A("- **The result-string exception** (match 20190) and five unflagged short matches were found by checks; "
-      "other data errors of the same kind may remain undetected.\n")
+    A("- **Outside cross-checks.** One data error was found and corrected (match 20190). Sooryavanshi's IPL 2026 "
+      "line rebuilt from the ball data (776 runs, average 48.5, strike rate 237.3) matches published figures, and "
+      "RR's 2026 playoff results match the reports. Five unflagged short matches were found by internal "
+      "checks. Other data errors of the same kind may remain undetected.\n")
     A("## 11. Honest weak spots\n")
     A("- The rating mostly measures how good a player is in general and only slightly how much he lifts under "
       "pressure. The data cannot support a stronger clutch claim, and section 8 shows why.")

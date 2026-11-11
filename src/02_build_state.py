@@ -47,6 +47,11 @@ def main():
     m["res_kind"] = [p[0] for p in pr]
     m["res_n"] = [p[1] for p in pr]
     m["res_dls"] = [p[2] for p in pr]
+    for mid, fix in CFG["source_overrides"]["result_fixes"].items():
+        sel = m.match_id == int(mid)
+        assert sel.sum() == 1 and m.loc[sel, "result"].iloc[0] == fix["raw_result"], f"override {mid} no longer matches the raw data"
+        m.loc[sel, "res_n"] = fix["res_n"]
+        print(f"  source override applied to match {mid}: {fix['raw_result']!r} -> {fix['corrected']!r}")
     m["year"] = pd.to_datetime(m.match_date).dt.year
     m["tier"] = np.where(m.comp_name.str.startswith("IPL"), "IPL",
                          np.where(m.comp_id.isin(CFG["a_team_comp_ids"]), "A-team", "T20I"))
@@ -251,7 +256,8 @@ def main():
              claimed=1.0, observed=float(m[m.clean].inn1_complete.mean()), status="pass", note=""),
         dict(check="wicket check: wickets lost in chase == 10 - N for 'won by N wickets'",
              claimed=1.0, observed=round(float(wk_ok.mean()), 5),
-             status="pass" if wk_ok.all() else "FAIL", note=f"{int(wk_ok.sum())}/{len(wk)} matches"),
+             status="pass" if wk_ok.all() else "FAIL",
+             note=f"{int(wk_ok.sum())}/{len(wk)} matches; one result string corrected from an outside source (D-24)"),
         dict(check="extras calibration MAE, fitted <= simple 1-run rule", claimed=round(mae_simple, 4),
              observed=round(mae_fit, 4), status="pass" if mae_fit <= mae_simple + 1e-9 else "FAIL",
              note=f"n={len(y)} run-margin matches; out-of-sample MAE {np.abs(cv_err).mean():.3f}"),

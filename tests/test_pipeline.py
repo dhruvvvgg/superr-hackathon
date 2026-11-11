@@ -63,8 +63,13 @@ def test_no_super_overs_or_reduced_matches_downstream(balls, minfo, bat, bowl):
 def test_wicket_check_against_results(minfo):
     wk = minfo[minfo.has_balls & (minfo.res_kind == "wkts")]
     ok = (10 - wk.res_n) == wk.wk_2
-    assert ok.sum() >= len(wk) - 1          # match 20190 has a wrong result string (DECISIONS D-08)
-    assert set(wk[~ok].match_id) <= {20190}
+    assert ok.all()                          # match 20190's result string is corrected by config (D-24)
+
+
+def test_source_overrides_are_only_the_documented_one():
+    assert set(CFG["source_overrides"]["result_fixes"]) == {"20190"}
+    raw_m = raw("matches").set_index("match_id")
+    assert raw_m.loc[20190, "result"] == CFG["source_overrides"]["result_fixes"]["20190"]["raw_result"]
 
 
 def test_extras_calibration_no_worse_than_one_run_rule():

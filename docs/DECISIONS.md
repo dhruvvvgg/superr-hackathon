@@ -320,3 +320,37 @@ rule text. One discrepancy is left open: the file's secondary source says RR won
 - Closed: the two README and DECISIONS statements that the context file was missing are corrected.
 - Left open, needs data not available here: retention and release outcomes, RR purse and slots, overseas
   limits, the 8 versus 9 wins discrepancy. Re-run `python run_all.py 09` after the lists are public.
+
+## H. Final pass: online cross-check and source overrides
+
+Rule adopted for this pass: where an outside source and the supplied data disagree, the outside source
+overrides only if it is specific, checkable and consistent with the ball data. Each override is a named
+entry in `config.json` `source_overrides`, applied in stage 02, asserted against the raw string, tested,
+and listed here. The raw CSVs are never edited. Where a source is weak or only restates a rule, the item
+stays "assumed" in the context file and nothing in the pipeline changes.
+
+**D-24 Match 20190 result (override).** Supplied result "Lucknow Super Giants Won by 6 wickets". Scorecards
+(ESPNcricinfo and four others) show LSG won by 5 wickets, SRH 121/8, LSG 127/5 in 16 overs. The ball data
+agrees (5 wickets lost, 96 legal balls), which confirms the D-08 suspicion. Override sets the wickets in
+the result to 5. The wicket check is now 419 of 419. No rating, target or model input changes, because for
+a chase won by wickets the result string feeds only that check.
+
+**D-25 Confirmed, no change.** Sooryavanshi's IPL 2026 batting rebuilt from the ball data is 776 runs, average
+48.5, strike rate 237.3, identical to the published figures. RR's 2026 playoffs in the data (Eliminator won
+by 47 runs against SRH, Qualifier 2 lost to GT by 7 wickets) match the reports. These checks validate the
+parser, the legal-ball rule and the dismissal handling on real records.
+
+**D-26 Closed.** RR's "eight wins" is the league record (8 league wins plus the Eliminator win). The
+earlier note of a discrepancy (D-22) is withdrawn.
+
+**D-27 Squad rules.** At most 25 players, at least 18, at most 8 overseas confirmed for the 2026 cycle by
+several outlets. Assumed unchanged for 2027. The 4-overseas playing XI limit has only one weak source.
+Overseas fee cap (lower of INR 18 crore and the mega-auction maximum) noted, unverified for 2027.
+FINDINGS section 9 updated.
+
+**D-28 Not changeable from outside sources.** Retention and release lists (due 17 November, not public),
+RR's 2027 purse and slots, and availability of every player.
+
+**D-29 Phase 2 experiments not re-run.** The override changes one string that only the wicket check reads,
+so no experiment metric can move. The scorecard in `phase2_experiments.csv` stands. Every other table was
+regenerated from scratch.
