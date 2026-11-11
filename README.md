@@ -22,7 +22,7 @@ python -m pytest -q tests
 first stage, for example `python run_all.py 07`, to resume. All seeds are fixed in `config.json` and two
 runs from scratch give byte-identical tables.
 
-The phase 2 model comparisons are not part of `run_all.py` because they take about 35 minutes:
+The phase 2 model comparisons are not part of `run_all.py` because they take about 40 minutes:
 
 ```bash
 python src/phase2_experiments.py

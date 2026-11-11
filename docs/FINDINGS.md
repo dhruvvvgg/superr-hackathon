@@ -70,7 +70,7 @@ The bootstrap interval of a top-ranked player usually sits below his point ratin
 
 Outcomes by tier (`pressure_validation.csv`, table = tier overall; figure `pressure_tier_metrics.png`):
 
-| tier | deliveries | strike_rate | dot_pct | boundary_pct | wickets per 100 balls | economy | mean_leverage | mean |WP change| (pts) |
+| tier | deliveries | strike_rate | dot_pct | boundary_pct | wickets per 100 balls | economy | mean_leverage | mean abs WP change (pts) |
 |---|---|---|---|---|---|---|---|---|
 | Low | 96667 | 137.60 | 36.96 | 18.07 | 5.42 | 8.58 | 0.52 | 0.93 |
 | Normal | 58000 | 139.28 | 37.36 | 19.01 | 5.28 | 8.67 | 1.14 | 2.03 |
@@ -118,8 +118,8 @@ Rule-based alternatives and their agreement with the primary flag (`pressure_var
 - **Legal balls.** The specification's rule ("other" extras are legal) gives 244 overs with more than six legal balls. Treating "other" as a no-ball gives 1. The adopted rule is: illegal = wide, Overstep, other.
 - **Wicket check.** 418/419 matches agree with the result string. The exception is match 20190, where the result string says 6 wickets and the ball data shows 5 wickets down. This check does not depend on extras.
 - **Extras calibration** (`extras_calibration.csv`). Fitted run values: wide 1.08, no-ball 1.00, other no-ball 1.00, leg bye 1.08, bye 1.69. On 396 clean run-margin matches the mean absolute error of the reconstructed margin is 2.14 runs (1-run rule 2.17; out of sample 2.17). The margin is exact in 32% of matches with the 1-run rule and within 2 runs in 57% with the fitted values. The fitted values barely beat the 1-run rule: the residual error is not about the average value of an extra, it is unrecorded bye and leg-bye runs and occasional missing deliveries.
-- **Why the target is anchored to the result.** In 42% of chases won by wickets the reconstructed chasing total is still below the reconstructed target at the end. The chase target is therefore recovered from the result string (see section 5). Required-rate features early in a chase still carry the reconstruction error of roughly 2 runs per innings.
-- **Exclusions.** no ball data: 16.0; reduced (revised fields or DLS text): 38.0; no winner (no result / abandoned) with balls, not reduced: 14.0; first innings incomplete without flag: 5.0; second innings unresolved or result inconsistent: 1.0. Clean matches kept: 809.0. Super-over deliveries dropped: 38.
+- **Why the target is anchored to the result.** In 42% of chases won by wickets the reconstructed chasing total is still below the reconstructed target at the end. The chase target is therefore recovered from the result string (DECISIONS.md, D-07). Required-rate features early in a chase still carry the reconstruction error of roughly 2 runs per innings.
+- **Exclusions.** no ball data: 16; reduced (revised fields or DLS text): 38; no winner (no result / abandoned) with balls, not reduced: 14; first innings incomplete without flag: 5; second innings unresolved or result inconsistent: 1. Clean matches kept: 809. Super-over deliveries dropped: 38.
 - **Scorecard audit** (`audit_scorecards.csv`). Ten seeded random matches were rebuilt from the ball data: winner and wickets agree with the result string in 10 of 10; run-margin errors range from 0.5 to 4.7 runs.
 - **Integrity audit** (`audit_integrity.csv`). 15 checks pass and 0 fail: no duplicated deliveries, no super-over or reduced-match deliveries downstream, no wide counted as a ball faced, no run out credited to a bowler, no match scored by a model that saw it, one name per player id.
 
@@ -440,7 +440,7 @@ python run_all.py
 python -m pytest -q tests
 ```
 
-About 6 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. A run from a fresh clone reproduced every table byte for byte (DECISIONS.md, phase 2a). `python src/phase2_experiments.py` re-runs the model comparisons (about 35 minutes).
+About 6 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. A run from a fresh clone reproduced every table byte for byte (DECISIONS.md, phase 2a). `python src/phase2_experiments.py` re-runs the model comparisons (about 40 minutes).
 
 ## 13. Open questions and next steps
 

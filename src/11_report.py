@@ -121,7 +121,7 @@ def main():
       f"by {100 * lv.mean_abs_wpa_top20pct:.1f} points on average, the bottom 50% by "
       f"{100 * lv.mean_abs_wpa_bottom50pct:.1f} points (`leverage_validity.csv`).\n")
     ov = pv[pv.table == "tier overall"][["tier", "deliveries", "strike_rate", "dot_pct", "boundary_pct", "wicket_pct", "economy", "mean_leverage", "mean_abs_wpa"]]
-    ov = ov.assign(mean_abs_wpa=100 * ov.mean_abs_wpa).rename(columns={"mean_abs_wpa": "mean |WP change| (pts)", "wicket_pct": "wickets per 100 balls"})
+    ov = ov.assign(mean_abs_wpa=100 * ov.mean_abs_wpa).rename(columns={"mean_abs_wpa": "mean abs WP change (pts)", "wicket_pct": "wickets per 100 balls"})
     ov["deliveries"] = ov.deliveries.astype(int)
     A("Outcomes by tier (`pressure_validation.csv`, table = tier overall; figure `pressure_tier_metrics.png`):\n")
     A(md(ov) + "\n")
@@ -175,11 +175,11 @@ def main():
     A(f"- **Why the target is anchored to the result.** In "
       f"{100 * ex['wicket-win chases: share with reconstructed total below reconstructed target']:.0f}% of chases won "
       "by wickets the reconstructed chasing total is still below the reconstructed target at the end. The chase "
-      "target is therefore recovered from the result string (see section 5). Required-rate features early in a "
+      "target is therefore recovered from the result string (DECISIONS.md, D-07). Required-rate features early in a "
       "chase still carry the reconstruction error of roughly 2 runs per innings.")
     excl = dq[dq.check.str.startswith("matches excluded")][["check", "observed"]]
-    A(f"- **Exclusions.** {'; '.join(f'{c.replace('matches excluded: ', '')}: {o}' for c, o in zip(excl.check, excl.observed))}. "
-      f"Clean matches kept: {dqv('clean matches kept')}. Super-over deliveries dropped: 38.")
+    A(f"- **Exclusions.** {'; '.join(f'{c.replace('matches excluded: ', '')}: {int(float(o))}' for c, o in zip(excl.check, excl.observed))}. "
+      f"Clean matches kept: {int(float(dqv('clean matches kept')))}. Super-over deliveries dropped: 38.")
     A(f"- **Scorecard audit** (`audit_scorecards.csv`). Ten seeded random matches were rebuilt from the ball data: "
       f"winner and wickets agree with the result string in {int(aud.winner_and_wickets_agree.sum())} of {len(aud)}; "
       f"run-margin errors range from {aud.run_margin_error.min():.1f} to {aud.run_margin_error.max():.1f} runs.")
@@ -453,7 +453,7 @@ def main():
     A("```bash\npip install -r requirements.txt\n```\n\n```bash\npython run_all.py\n```\n\n```bash\npython -m pytest -q tests\n```\n")
     A("About 6 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. "
       "A run from a fresh clone reproduced every table byte for byte (DECISIONS.md, phase 2a). "
-      "`python src/phase2_experiments.py` re-runs the model comparisons (about 35 minutes).\n")
+      "`python src/phase2_experiments.py` re-runs the model comparisons (about 40 minutes).\n")
     A("## 13. Open questions and next steps\n")
     A("- Check the retention lists and replace the availability column, then re-run stage 09.")
     A("- Obtain true innings totals or extras run values; the reconstruction error would vanish.")

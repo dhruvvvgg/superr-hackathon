@@ -290,3 +290,17 @@ in one group (`wp_gbm`, `wp_nomom`) were still rejected.
 
 **The component-scaling idea was mine and it failed its test.** It is logged as rejected, with the
 numbers, and the pre-registered z-scoring stays.
+
+## F. Phase 2c: final run
+
+- `config.json` now has `baseline.role_aware: true`; nothing else changed from the pre-registered
+  specification except the items logged above (D-02, D-07, D-11, P-1).
+- Full run from scratch, then a second run from a fresh `git clone`: all 28 output tables and
+  `docs/FINDINGS.md` byte-identical between the two, 26 tests pass in both. Runtime 5.4 minutes.
+- `docs/FINDINGS.md` is written by `src/11_report.py` from the tables, so its numbers cannot drift from
+  the outputs. The only hand-typed numbers are the experiment notes in `docs/phase2_verdicts.json` and
+  this file; they were checked against `outputs/tables/phase2_experiments.csv`.
+- Decision rule in the final run: no batter below the 0.40 grid threshold. Among bowlers Jason Holder
+  (rank 10, grid frequency 0.31) is below it, and no outsider reaches 0.40, so the primary list stands.
+- Final lists differ from phase 1 by one name in each group (Fakhar Zaman for Prabhsimran Singh,
+  Jason Holder for Taskin Ahmed, ranks 10 and 11 swapping) and by order within the top 10. Cause: P-1.
