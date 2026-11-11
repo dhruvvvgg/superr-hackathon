@@ -304,3 +304,19 @@ numbers, and the pre-registered z-scoring stays.
   (rank 10, grid frequency 0.31) is below it, and no outsider reaches 0.40, so the primary list stands.
 - Final lists differ from phase 1 by one name in each group (Fakhar Zaman for Prabhsimran Singh,
   Jason Holder for Taskin Ahmed, ranks 10 and 11 swapping) and by order within the top 10. Cause: P-1.
+
+## G. Closing pass: supplied context file
+
+**D-22 Context file.** The supplied `context/rr_auction_context.md` replaced the one assembled in phase 1
+(D-01, D-21). Differences that mattered: the retention deadline is 17 November, not 15 November; IPL 2027
+is a mini-auction on 16 December 2026 with a mega auction ahead of 2028; squad limits are 25 maximum and 18
+minimum; overseas limits remain unconfirmed. Section 9 of FINDINGS and the squad-rule paragraph were
+rewritten from it. No rating, ranking or shortlist logic changed, because the layer never used the old
+rule text. One discrepancy is left open: the file's secondary source says RR won eight league matches in
+2026 and the match data shows nine wins in 16 completed matches.
+
+**D-23 Open items closed or left open.**
+- Closed: availability stays "unknown, check after retention list" (lists due 17 November, not public).
+- Closed: the two README and DECISIONS statements that the context file was missing are corrected.
+- Left open, needs data not available here: retention and release outcomes, RR purse and slots, overseas
+  limits, the 8 versus 9 wins discrepancy. Re-run `python run_all.py 09` after the lists are public.

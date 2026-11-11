@@ -319,7 +319,7 @@ This is the most important caveat in the document. Split-half Spearman correlati
 
 ## 9. Rajasthan Royals fit layer
 
-This layer sits on top of the rankings and does not feed them. Public context and its sourcing are in `context/rr_auction_context.md`. Overseas status is derived (national side in the mapping file is not India). Availability is "unknown, check after retention list" for every player: retention lists were due on 15 November 2026 and were not public when this was written.
+This layer sits on top of the rankings and does not feed them. Public context and its sourcing are in `context/rr_auction_context.md`. Overseas status is derived (national side in the mapping file is not India). Availability is "unknown, check after retention list" for every player: the retention and release deadline was moved to 17 November 2026 and the lists were not public when this was written. The IPL 2027 auction is a mini-auction on 16 December 2026 in Goa, the last before a mega auction ahead of 2028.
 
 **RR under pressure by phase** (`rr_team_profile.csv`, figure `rr_gap.png`). NRAE per 100 pressure balls, RR minus the league, with RR's rank among the ten teams. The table file also splits chasing and setting.
 
@@ -399,7 +399,7 @@ In IPL 2026 RR ranked seventh or worse of ten under pressure in: batting in the 
 | batter | 16 | Nicholas Pooran | top/middle order (3-4) | middle | Lucknow Super Giants | yes | 0.26 | upgrade on point estimate, inside the noise | unknown, check after retention list |
 | batter | 19 | Suryakumar Yadav | top/middle order (3-4) | middle | Mumbai Indians | no | 0.24 | upgrade on point estimate, inside the noise | unknown, check after retention list |
 
-**Squad-rule constraints.** For IPL 2026 a squad held at most 25 players with at most 8 overseas (sourced, see the context file). At most 4 overseas players in an XI is the standard playing condition (not re-verified for 2027). Purse, retention count and whether 2027 is a mini or mega auction are unverified. RR's 2026 regulars already include 5 derived-overseas players, so an overseas pick has to displace one of them in the XI; Indian options on the shortlist are worth more to RR than their rating alone says.
+**Squad-rule constraints.** This is a mini-auction, so a pick has to fit the slots and purse RR has left after releases; RR's remaining purse and open slots for 2027 are unknown until the lists are out. Sourced in the context file: a squad holds at most 25 and at least 18 players, and RR filled all 25 places in the 2026 cycle. Not confirmed by any source: the overseas limits (the standard playing condition of at most 4 overseas players in an XI is assumed). RR's 2026 regulars already include 5 derived-overseas players, so an overseas pick has to displace one of them in the XI; Indian options on the shortlist are worth more to RR than their rating alone says. A mini-auction also has no right-to-match and few slots, which favours a short, role-specific shortlist over a long list.
 
 "Would displace" is used only where the candidate's 80% rating interval lies entirely above the incumbent's. Everything else is described as inside the noise.
 

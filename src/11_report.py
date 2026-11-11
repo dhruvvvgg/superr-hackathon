@@ -356,8 +356,9 @@ def main():
     A("## 9. Rajasthan Royals fit layer\n")
     A("This layer sits on top of the rankings and does not feed them. Public context and its sourcing are in "
       "`context/rr_auction_context.md`. Overseas status is derived (national side in the mapping file is not "
-      "India). Availability is \"unknown, check after retention list\" for every player: retention lists were "
-      "due on 15 November 2026 and were not public when this was written.\n")
+      "India). Availability is \"unknown, check after retention list\" for every player: the retention and release "
+      "deadline was moved to 17 November 2026 and the lists were not public when this was written. The IPL 2027 "
+      "auction is a mini-auction on 16 December 2026 in Goa, the last before a mega auction ahead of 2028.\n")
     k = prof[(prof["sample"] == "pressure") & (prof.situation == "all") & (prof.phase != "all")]
     A("**RR under pressure by phase** (`rr_team_profile.csv`, figure `rr_gap.png`). NRAE per 100 pressure balls, "
       "RR minus the league, with RR's rank among the ten teams. The table file also splits chasing and setting.\n")
@@ -393,12 +394,15 @@ def main():
     A("**Auction shortlist.** Players from the top 20 of either group who are not already at RR, whose main "
       "phase is one of RR's 2026 pressure gap cells and whose bootstrap top-10 probability is at least 0.10:\n")
     A(md(short[["group", "rank", "player_name", "role", "main_phase", "ipl_2026_team", "overseas_derived", "boot_top10_prob", "displacement_call", "availability"]]) + "\n")
-    A("**Squad-rule constraints.** For IPL 2026 a squad held at most 25 players with at most 8 overseas (sourced, "
-      "see the context file). At most 4 overseas players in an XI is the standard playing condition (not "
-      "re-verified for 2027). Purse, retention count and whether 2027 is a mini or mega auction are unverified. "
+    A("**Squad-rule constraints.** This is a mini-auction, so a pick has to fit the slots and purse RR has left "
+      "after releases; RR's remaining purse and open slots for 2027 are unknown until the lists are out. Sourced "
+      "in the context file: a squad holds at most 25 and at least 18 players, and RR filled all 25 places in the "
+      "2026 cycle. Not confirmed by any source: the overseas limits (the standard playing condition of at most 4 "
+      "overseas players in an XI is assumed). "
       f"RR's 2026 regulars already include {int(inc[inc.regular].overseas_derived.sum())} derived-overseas players, so "
       "an overseas pick has to displace one of them in the XI; Indian options on the shortlist are worth more "
-      "to RR than their rating alone says.\n")
+      "to RR than their rating alone says. A mini-auction also has no right-to-match and few slots, which favours "
+      "a short, role-specific shortlist over a long list.\n")
     A("\"Would displace\" is used only where the candidate's 80% rating interval lies entirely above the "
       "incumbent's. Everything else is described as inside the noise.\n")
 

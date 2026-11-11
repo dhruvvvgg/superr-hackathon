@@ -56,8 +56,8 @@ context/rr_auction_context.md   public context with source tags
 
 - The six CSVs sit unchanged in `data/raw/`. They arrived with plain names, so no renaming was needed.
 - `docs/problem_statement.pdf` is the Round 1 brief. `CLAUDE_CODE_HANDOVER.md` is the build specification.
-- `context/rr_auction_context.md` was not supplied with the data. It was assembled from the CSVs and a web
-  search, and each line is tagged as data, sourced or unverified.
+- `context/rr_auction_context.md` was supplied after the first build (public web research dated
+  2026-11-11) and extended with facts derived from the CSVs. Everything not listed there is unverified.
 - Three facts differ from the build specification and are documented in `docs/DECISIONS.md`: "other"
   extras are no-balls and are not legal deliveries (D-02); four DLS matches carry no revised-overs flag
   (D-04); the reconstructed chase target is replaced by a result-anchored target (D-07).
