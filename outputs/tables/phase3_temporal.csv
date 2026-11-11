@@ -1,19 +1,19 @@
 role,candidate,pred_nrae_2025_26,pred_wpa_2025_26
-bat,current composite,0.107394,-0.0456839
-bat,level (unweighted),0.159227,0.0752208
-bat,lev-level a=1,0.126046,0.00983707
-bat,lev-level a=2,0.0520292,-0.0915695
-bat,lev 0.8L 0.2I a=1,0.105766,-0.0198751
-bat,lev 0.7L 0.3I a=1,0.0921195,-0.0352619
-bat,lev 0.6L 0.25I 0.15D a=1,0.0689348,-0.0579052
-bat,lev current weights a=1,0.0675475,-0.0562116
-bat,lev 0.7L 0.3I a=2,0.0320451,-0.121208
-bowl,current composite,0.253166,0.36548
-bowl,level (unweighted),0.31332,0.415521
-bowl,lev-level a=1,0.316879,0.319392
-bowl,lev-level a=2,0.308777,0.252294
-bowl,lev 0.8L 0.2I a=1,0.296125,0.291668
-bowl,lev 0.7L 0.3I a=1,0.29202,0.283506
-bowl,lev 0.6L 0.25I 0.15D a=1,0.27827,0.268815
-bowl,lev current weights a=1,0.264877,0.258735
-bowl,lev 0.7L 0.3I a=2,0.274231,0.200422
+bat,spec composite (phase 1-2),0.111263,-0.0421842
+bat,level (unweighted),0.173643,0.0790279
+bat,lev-level a=1,0.128008,0.00960398
+bat,lev-level a=2,0.0523722,-0.0951342
+bat,lev 0.8L 0.2I a=1,0.112461,-0.0155393
+bat,lev 0.7L 0.3I a=1,0.0959215,-0.0331918
+bat,lev 0.6L 0.25I 0.15D a=1,0.0782378,-0.0534841
+bat,lev spec weights a=1,0.0790736,-0.0467174
+bat,lev 0.7L 0.3I a=2,0.0175033,-0.130121
+bowl,spec composite (phase 1-2),0.255277,0.377364
+bowl,level (unweighted),0.319368,0.424123
+bowl,lev-level a=1,0.308471,0.310119
+bowl,lev-level a=2,0.292341,0.238201
+bowl,lev 0.8L 0.2I a=1,0.291411,0.290838
+bowl,lev 0.7L 0.3I a=1,0.275981,0.272987
+bowl,lev 0.6L 0.25I 0.15D a=1,0.274434,0.269449
+bowl,lev spec weights a=1,0.247909,0.254052
+bowl,lev 0.7L 0.3I a=2,0.259973,0.18422

@@ -18,7 +18,7 @@ python run_all.py
 python -m pytest -q tests
 ```
 
-`run_all.py` runs every stage from the raw CSVs in about 6 minutes on 4 cores (Python 3.13). It accepts a
+`run_all.py` runs every stage from the raw CSVs in about 7 minutes on 4 cores (Python 3.13). It accepts a
 first stage, for example `python run_all.py 07`, to resume. All seeds are fixed in `config.json` and two
 runs from scratch give byte-identical tables.
 
@@ -43,12 +43,14 @@ src/07_ratings.py           ridge and empirical Bayes estimates, consistency, co
 src/08_robustness.py        bootstrap, sensitivity grid, persistence, decision rule, final lists
 src/09_rr_fit.py            Rajasthan Royals profile, gap analysis and auction shortlist
 src/10_audit.py             scorecard and integrity audit
+src/12_improve.py           phase 3: candidate ratings scored on held-out predictive validity
+src/13_improve2.py          phase 3: focused candidates, paired comparisons, temporal holdout
 src/11_report.py            writes docs/FINDINGS.md from the output tables
 src/phase2_experiments.py   side-by-side model variants scored on model quality
 src/*_lib.py, common.py     shared code
 tests/                      acceptance checks and leakage guards
 outputs/tables, figures     everything FINDINGS.md cites
-outputs/phase1/             the phase 1 (pre-audit) results, kept for comparison
+outputs/phase1/, phase2/      earlier results (pre-audit, and after the role-aware baseline), kept for comparison
 context/rr_auction_context.md   public context with source tags
 ```
 

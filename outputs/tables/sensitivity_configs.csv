@@ -1,29 +1,37 @@
 role,config,family,n_eligible,top10_overlap_with_primary,spearman_with_primary,n_common
 batter,A primary,primary,153,10,1,153
-batter,B contested-state rule,pressure definition,105,3,0.673345,96
-batter,C leverage pct >= 90,pressure definition,89,5,0.833912,89
-batter,D leverage pct >= 70,pressure definition,167,8,0.89475,153
-batter,"E death overs, WP 0.2-0.8",pressure definition,87,3,0.685979,79
-batter,F global leverage pct >= 80,pressure definition,143,8,0.820579,141
-batter,eligibility x0.5,eligibility,211,10,0.997869,153
-batter,eligibility x1.5,eligibility,116,9,0.999147,116
-batter,recency off,weights,153,7,0.909707,153
-batter,A-team and associates at full weight,weights,153,10,0.991174,153
-batter,A-team and associate opposition removed,data subset,145,10,0.992899,145
-batter,IPL only,data subset,79,4,0.864873,79
-batter,T20I only,data subset,89,6,0.847566,89
-batter,empirical Bayes estimator,estimator,153,5,0.8003,153
+batter,B contested-state rule,pressure definition,105,6,0.99688,96
+batter,C leverage pct >= 90,pressure definition,89,9,0.997838,89
+batter,D leverage pct >= 70,pressure definition,167,10,0.998586,153
+batter,"E death overs, WP 0.2-0.8",pressure definition,87,6,0.99703,79
+batter,F global leverage pct >= 80,pressure definition,143,10,0.997915,141
+batter,no leverage weighting,pressure definition,153,6,0.803617,153
+batter,leverage weight power 0.5,pressure definition,153,8,0.947258,153
+batter,leverage weight power 2,pressure definition,153,6,0.836583,153
+batter,spec weights 0.40/0.25/0.20/0.15,weights,153,10,0.834975,153
+batter,eligibility x0.5,eligibility,211,10,1,153
+batter,eligibility x1.5,eligibility,116,9,1,116
+batter,recency off,weights,153,7,0.924651,153
+batter,A-team and associates at full weight,weights,153,10,0.988189,153
+batter,A-team and associate opposition removed,data subset,145,10,0.994977,145
+batter,IPL only,data subset,79,5,0.884664,79
+batter,T20I only,data subset,89,7,0.832959,89
+batter,empirical Bayes estimator,estimator,153,4,0.698947,153
 bowler,A primary,primary,166,10,1,166
-bowler,B contested-state rule,pressure definition,133,7,0.769925,131
-bowler,C leverage pct >= 90,pressure definition,108,8,0.827231,108
-bowler,D leverage pct >= 70,pressure definition,182,8,0.909638,166
-bowler,"E death overs, WP 0.2-0.8",pressure definition,97,8,0.797029,96
-bowler,F global leverage pct >= 80,pressure definition,152,7,0.789991,149
-bowler,eligibility x0.5,eligibility,230,8,0.998439,166
-bowler,eligibility x1.5,eligibility,129,10,0.999609,129
-bowler,recency off,weights,166,9,0.947177,166
-bowler,A-team and associates at full weight,weights,166,9,0.994176,166
-bowler,A-team and associate opposition removed,data subset,159,10,0.990342,159
-bowler,IPL only,data subset,84,7,0.854186,84
-bowler,T20I only,data subset,98,5,0.859419,98
-bowler,empirical Bayes estimator,estimator,166,5,0.831312,166
+bowler,B contested-state rule,pressure definition,133,10,0.998004,131
+bowler,C leverage pct >= 90,pressure definition,108,10,0.998819,108
+bowler,D leverage pct >= 70,pressure definition,182,10,0.999056,166
+bowler,"E death overs, WP 0.2-0.8",pressure definition,97,10,0.99783,96
+bowler,F global leverage pct >= 80,pressure definition,152,10,0.998157,149
+bowler,no leverage weighting,pressure definition,166,6,0.875722,166
+bowler,leverage weight power 0.5,pressure definition,166,8,0.966569,166
+bowler,leverage weight power 2,pressure definition,166,9,0.823185,166
+bowler,spec weights 0.40/0.25/0.20/0.15,weights,166,10,0.855566,166
+bowler,eligibility x0.5,eligibility,230,10,1,166
+bowler,eligibility x1.5,eligibility,129,10,1,129
+bowler,recency off,weights,166,9,0.945089,166
+bowler,A-team and associates at full weight,weights,166,10,0.992227,166
+bowler,A-team and associate opposition removed,data subset,159,10,0.992211,159
+bowler,IPL only,data subset,84,6,0.892741,84
+bowler,T20I only,data subset,98,7,0.843812,98
+bowler,empirical Bayes estimator,estimator,166,5,0.727017,166

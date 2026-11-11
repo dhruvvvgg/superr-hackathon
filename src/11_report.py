@@ -29,15 +29,17 @@ def reason(r, role):
     z = {"level": r.z_level, "impact": r.z_impact, "consistency": r.z_consistency, "delta": r.z_delta}
     lab = {"level": "pressure level", "impact": "win-probability impact", "consistency": "consistency",
            "delta": "lift over own normal level"}
-    top = sorted(z, key=z.get, reverse=True)[:2]
-    lead = " and ".join(f"{lab[k]} ({z[k]:+.1f})" for k in top)
+    lead = f"leverage-weighted level ({z['level']:+.1f} SD)"
+    sec = max(("impact", "consistency", "delta"), key=lambda k: z[k])
+    if z[sec] >= 1.0:
+        lead += f", also high on {lab[sec]} ({z[sec]:+.1f})"
     if role == "bat":
         raw_ = (f"strike rate {r.press_sr:.0f} under pressure against {r.normal_sr:.0f} otherwise, "
                 f"{int(r.press_runs)} runs and {int(r.press_outs)} dismissals in {int(r.n_press_balls)} pressure balls")
     else:
         raw_ = (f"economy {r.press_econ:.2f} under pressure against {r.normal_econ:.2f} otherwise, "
                 f"{int(r.press_wkts)} wickets in {int(r.n_press_balls)} pressure balls")
-    return f"Leads on {lead}; {raw_}."
+    return f"Rated on {lead}; {raw_}."
 
 
 def main():
@@ -244,23 +246,22 @@ def main():
       + ". The cross-validated error surface is almost flat in the delta penalty and for bowlers the choice "
         "sits at the largest value in the grid: the data contain very little information about individual "
         "pressure deltas.\n")
-    A("**Four components per player.**\n")
-    A("| Component | Weight | Definition |\n|---|---|---|")
-    A(f"| Level | {W['level']:.2f} | ridge normal effect + pressure delta, NRAE per 100 balls, opponent-adjusted and shrunk |")
-    A(f"| Impact | {W['impact']:.2f} | pressure WPA per 100 balls, empirical Bayes shrinkage with match-clustered errors |")
-    A(f"| Consistency | {W['consistency']:.2f} | share of pressure innings or spells with NRAE at or above 0, minus the share that were clearly bad, both beta-binomial shrunk |")
-    A(f"| Delta | {W['delta']:.2f} | ridge pressure delta: pressure level minus own normal level |\n")
-    if std == "zscore":
-        A("Each component is z-scored among eligible players and the rating is the weighted sum.\n")
-    else:
-        A("Each component is centred among eligible players and divided by the estimated between-player "
-          "standard deviation of the true quantity (the prior SD of its shrinkage model), then combined with the "
-          "weights above. This replaced plain z-scoring in phase 2: z-scoring after shrinkage gives every "
-          "component the same spread, including components in which the data cannot tell players apart, and so "
-          "re-inflates noise that the shrinkage had removed. The pre-registered weights are unchanged. See "
-          "\"What changed in phase 2\".\n")
+    WS = CFG["composite_weights_spec"]
+    A("**The rating (adopted in phase 3, post-hoc change P-2).** The rating is the leverage-weighted level: "
+      "the ridge estimate of a player's NRAE per 100 balls in which every ball is weighted by its leverage "
+      f"(weight = leverage to the power {CFG['ridge'].get('lev_alpha', 0):g}, normalised), so a ball that can move the match "
+      "counts more than a ball that cannot, with no cutoff. It is opponent-adjusted by the same ridge and "
+      "standardised among eligible players. The four-part composite of the specification is still computed and "
+      "reported (`z_` columns) but carries no weight in the rating, because on held-out data its extra parts "
+      "did not predict anything (section \"What changed in phase 3\").\n")
+    A("| Component | Spec weight | Rating weight | Definition |\n|---|---|---|---|")
+    A(f"| Level | {WS['level']:.2f} | {W['level']:.2f} | ridge estimate, NRAE per 100 balls, opponent-adjusted; leverage-weighted in the rating |")
+    A(f"| Impact | {WS['impact']:.2f} | {W['impact']:.2f} | pressure WPA per 100 balls, empirical Bayes shrinkage with match-clustered errors |")
+    A(f"| Consistency | {WS['consistency']:.2f} | {W['consistency']:.2f} | share of pressure innings or spells with NRAE at or above 0, minus the share clearly bad, beta-binomial shrunk |")
+    A(f"| Delta | {WS['delta']:.2f} | {W['delta']:.2f} | ridge pressure delta: pressure level minus own normal level |\n")
+    A("Components are z-scored among eligible players.\n")
     a = ag[ag.quantity.str.contains("ridge vs")]
-    A("**Cross-check estimator** (`estimator_agreement.csv`). Empirical Bayes shrinkage of raw pressure NRAE:\n")
+    A("**Cross-check estimator** (`estimator_agreement.csv`). Empirical Bayes shrinkage of raw pressure NRAE (unweighted by leverage):\n")
     A(md(a.rename(columns={"spearman": "value"})) + "\n")
     A("The Level correlation is below the 0.8 the specification asked us to investigate. The cause is "
       "structural, not a bug: the ridge Level is normal effect plus delta and borrows strength from all of a "
@@ -458,7 +459,7 @@ def main():
     # ---- 12, 13 ---------------------------------------------------------------------------------------------
     A("## 12. Reproduction\n")
     A("```bash\npip install -r requirements.txt\n```\n\n```bash\npython run_all.py\n```\n\n```bash\npython -m pytest -q tests\n```\n")
-    A("About 6 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. "
+    A("About 7 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. "
       "A run from a fresh clone reproduced every table byte for byte (DECISIONS.md, phase 2a). "
       "`python src/phase2_experiments.py` re-runs the model comparisons (about 40 minutes).\n")
     A("## 13. Open questions and next steps\n")
@@ -471,7 +472,7 @@ def main():
     A("- Test whether a win-probability model with team strength changes leverage for mismatched fixtures.\n")
 
     # ---- phase 2 -----------------------------------------------------------------------------------------------
-    A("## What changed in phase 2\n")
+    A("## What changed in phase 2 (before phase 3)\n")
     A("Phase 2 audited the phase 1 pipeline, then tried model changes and judged each only on model-quality "
       "evidence: out-of-fold log loss and calibration, split-half reliability of the ratings (mean Spearman "
       "over 20 random match-half splits), season-split persistence and bootstrap stability. The identity of "
@@ -495,40 +496,108 @@ def main():
             A(f"Standard error of the split-half figure across the 20 splits is about "
               f"{se.loc['base', 'bat_splithalf_rating_se']:.3f} (batters) and {se.loc['base', 'bowl_splithalf_rating_se']:.3f} "
               "(bowlers); differences smaller than about twice that are not evidence.\n")
-    A("**Top-10 lists before and after** (`outputs/phase1/top10_*.csv` versus `outputs/tables/top10_*.csv`):\n")
-    for label, new, full_new in [("batters", tb, rb), ("bowlers", tw, rw)]:
-        old = P1(f"top10_{label}.csv")
-        full_old = P1(f"{label[:-1]}_ratings.csv")
-        d = pd.DataFrame({"Rank": range(1, 11), "Phase 1": old.player_name.values, "Phase 2 (final)": new.player_name.values})
-        A(f"*{label.capitalize()}*\n")
-        A(md(d) + "\n")
-        o_r = full_old.set_index("player_id")["rank"]
-        n_r = full_new.set_index("player_id")["rank"]
-        zc = ["z_level", "z_impact", "z_consistency", "z_delta"]
-        fo, fn = full_old.set_index("player_id"), full_new.set_index("player_id")
-        both = list(dict.fromkeys(list(old.player_id) + list(new.player_id)))
-        lab = {"z_level": "level", "z_impact": "impact", "z_consistency": "consistency", "z_delta": "delta"}
-        any_change = False
-        for p in both:
-            if p not in fo.index or p not in fn.index or int(o_r[p]) == int(n_r[p]):
-                continue
-            any_change = True
-            dd = {c: CFG["composite_weights"][c[2:]] * (fn.loc[p, c] - fo.loc[p, c]) for c in zc}
-            big = max(dd, key=lambda c: abs(dd[c]))
-            status = ("enters the top 10" if p not in set(old.player_id) else
-                      "leaves the top 10" if p not in set(new.player_id) else "stays in the top 10")
-            A(f"- {fn.player_name[p]}: rank {int(o_r[p])} to {int(n_r[p])}, {status}. Rating {fo.loc[p, 'rating']:.2f} to "
-              f"{fn.loc[p, 'rating']:.2f}; the component that moved most is {lab[big]} "
-              f"({dd[big]:+.2f} rating points).")
-        if not any_change:
-            A("- No rank changed among these players.")
-        A("")
-    A("Every difference has the same cause, the role-aware baseline (post-hoc change P-1). It stops charging "
-      "batters for the slow first balls of an innings and stops crediting bowlers for bowling to batters who "
-      "have just arrived. Ratings move by up to about half a point and neighbours swap places. "
-      "A player can gain a place while his own rating falls, when a neighbour falls further. "
-      "Ranks 9 to 12 are separated by a few hundredths of a rating point in both versions.\n")
+    def compare(old_dir, new_dir, old_lab, new_lab, why, phase3=False):
+        rd = lambda d, n: pd.read_csv(os.path.join(ROOT, "outputs", d, n)) if d != "tables" else T(n)
+        for label in ("batters", "bowlers"):
+            old, new = rd(old_dir, f"top10_{label}.csv"), rd(new_dir, f"top10_{label}.csv")
+            fo = rd(old_dir, f"{label[:-1]}_ratings.csv").set_index("player_id")
+            fn = rd(new_dir, f"{label[:-1]}_ratings.csv").set_index("player_id")
+            d = pd.DataFrame({"Rank": range(1, 11), old_lab: old.player_name.values, new_lab: new.player_name.values})
+            A(f"*{label.capitalize()}*\n")
+            A(md(d) + "\n")
+            any_change = False
+            for p in dict.fromkeys(list(new.player_id) + list(old.player_id)):
+                if p not in fo.index or p not in fn.index or int(fo.loc[p, "rank"]) == int(fn.loc[p, "rank"]):
+                    continue
+                any_change = True
+                status = ("enters the top 10" if p not in set(old.player_id) else
+                          "leaves the top 10" if p not in set(new.player_id) else "stays in the top 10")
+                line = f"- {fn.player_name[p]}: rank {int(fo.loc[p, 'rank'])} to {int(fn.loc[p, 'rank'])}, {status}. "
+                if phase3:
+                    ws = CFG["composite_weights_spec"]
+                    dropped = fo.loc[p, "rating"] - ws["level"] * fo.loc[p, "z_level"]
+                    line += (f"Level z {fo.loc[p, 'z_level']:+.2f} (unweighted) to {fn.loc[p, 'z_level']:+.2f} (leverage-weighted); "
+                             f"the three dropped components had contributed {dropped:+.2f} to the old rating "
+                             f"(impact {fo.loc[p, 'z_impact']:+.1f}, consistency {fo.loc[p, 'z_consistency']:+.1f}, delta {fo.loc[p, 'z_delta']:+.1f}).")
+                else:
+                    zc = ["z_level", "z_impact", "z_consistency", "z_delta"]
+                    ws = CFG["composite_weights_spec"]
+                    dd = {c: ws[c[2:]] * (fn.loc[p, c] - fo.loc[p, c]) for c in zc}
+                    big = max(dd, key=lambda c: abs(dd[c]))
+                    line += (f"Rating {fo.loc[p, 'rating']:.2f} to {fn.loc[p, 'rating']:.2f}; the component that moved most is "
+                             f"{big[2:]} ({dd[big]:+.2f} rating points).")
+                A(line)
+            if not any_change:
+                A("- No rank changed among these players.")
+            A("")
+        A(why + "\n")
+
+    A("**Top-10 lists before and after** (`outputs/phase1/top10_*.csv` versus `outputs/phase2/top10_*.csv`):\n")
+    compare("phase1", "phase2", "Phase 1", "Phase 2 (final)",
+            "Every difference has the same cause, the role-aware baseline (post-hoc change P-1). It stops charging "
+            "batters for the slow first balls of an innings and stops crediting bowlers for bowling to batters who "
+            "have just arrived. Ratings move by up to about half a point and neighbours swap places. "
+            "Ranks 9 to 12 are separated by a few hundredths of a rating point in both versions.")
     A(verdicts.get("_summary", {}).get("note", "") + "\n")
+
+    # ---- phase 3 ---------------------------------------------------------------------------------------------
+    A("## What changed in phase 3\n")
+    pc = T("phase3_final_candidates.csv")
+    tc = T("phase3_temporal.csv")
+    A("Phase 3 looked for the best rating the supplied data can support. The yardstick was made stricter than "
+      "phase 2's: rate players from one random half of the matches and measure how well that rating predicts "
+      "the same players' raw pressure performance in the other half (weighted Spearman correlation, weights = "
+      "held-out pressure balls), over 20 random splits in both directions, for two targets (pressure NRAE and "
+      "pressure WPA per 100 balls). Rating-versus-rating correlation, used in phase 2, can reward a score for "
+      "being stable noise; this cannot. Differences are paired: every candidate is scored on the same splits. "
+      "A 2022-24 to 2025-26 temporal test was kept apart from the selection and used only to confirm. Rule "
+      "fixed before adopting: the highest sum of the four random-split correlations wins, provided it does not "
+      "lose to the old composite on the temporal NRAE check. Name and identity of players played no part.\n")
+    A("**Finding 1. The extra components did not predict anything.** Single components used alone "
+      "(`phase3_candidates.csv`, mean over splits, pressure NRAE target):\n")
+    cand = T("phase3_candidates.csv")
+    one = cand[cand.candidate.isin(["level only", "impact only", "consistency only", "delta only", "primary composite",
+                                    "level only [leverage-weighted (alpha 1)]"])]
+    one = one.pivot(index="candidate", columns="role", values="pred_nrae").reset_index()
+    A(md(one.rename(columns={"bat": "batters", "bowl": "bowlers"}), 3) + "\n")
+    A("Level predicts held-out pressure performance. Delta and consistency are at or near zero, and impact is "
+      "negative for batters. The specification gave these three 60% of the weight; they added noise.\n")
+    A("**Finding 2. Weighting each ball by its leverage is a better 'pressure level' than a cutoff.** Candidates, "
+      "paired against the old composite on the same splits (`phase3_final_candidates.csv`; positive = better):\n")
+    cols = ["role", "candidate", "pred_nrae", "pred_wpa", "d_nrae_vs_spec", "d_nrae_se", "d_wpa_vs_spec", "d_wpa_se"]
+    A(md(pc[cols], 3) + "\n")
+    A("Temporal confirmation, rated on 2022-24 and scored on 2025-26 pressure performance (`phase3_temporal.csv`; "
+      "one draw, so no standard error):\n")
+    A(md(tc, 3) + "\n")
+    A("**Reading it honestly.** On the random splits the leverage-weighted level beats the old composite on both "
+      "targets for batters (about 3 standard errors on WPA) and on NRAE for bowlers (about 3.5). On the "
+      "temporal test it beats the old composite on NRAE in both groups, but the plain unweighted level scores "
+      "higher still for batters, and the old composite scores higher on WPA for bowlers. The temporal draw is a "
+      "single sample of about 100 players and is noisy; it shows the improvement is not purely an artefact of "
+      "random splits, not that this exact variant is the optimum. The absolute correlations are small (batters "
+      "about 0.06, bowlers about 0.14): pressure performance is only weakly predictable from past pressure "
+      "performance, so every ranking here, old or new, is a noisy estimate.\n")
+    A("**Adopted (post-hoc change P-2).** The rating is the leverage-weighted level (weight = leverage, "
+      "power 1) with eligibility, opponent adjustment and all other parts unchanged. Impact, consistency and "
+      "delta stay in the tables as descriptive columns and as sensitivity configurations. The pre-registered "
+      "composite is kept as the `spec weights` configuration in the sensitivity grid and in `outputs/phase2/`.\n")
+    sc2 = sc[sc.config.isin(["no leverage weighting", "leverage weight power 0.5", "leverage weight power 2", "spec weights 0.40/0.25/0.20/0.15"])]
+    A("How much the lists depend on this choice (`sensitivity_configs.csv`, top-10 overlap with the final lists):\n")
+    A(md(sc2[["role", "config", "n_eligible", "top10_overlap_with_primary", "spearman_with_primary"]]) + "\n")
+    A("**Other phase 3 attempts that did not help.** Averaging the win-probability models gave log loss 0.5217 "
+      "against 0.5220, which is nothing; the win-probability model is at its ceiling for these features and "
+      "was not changed. Leverage power 2 predicts worse than power 1 (it concentrates weight on too few balls). "
+      "Re-tuning the ridge penalties under leverage weighting moved them to 3,000 and 30,000 and left the "
+      "conclusions unchanged (the table above was recomputed with them).\n")
+    A("**Persistence after phase 3** (`persistence.csv`). Split-half reliability of the rating rose from "
+      "0.06 to {:.2f} for batters and from 0.12 to {:.2f} for bowlers. Still low; see section 8.\n".format(
+          rs.loc['batter', 'spearman_rating'], rs.loc['bowler', 'spearman_rating']))
+    A("**Top-10 lists before and after** (`outputs/phase2/top10_*.csv` versus `outputs/tables/top10_*.csv`):\n")
+    compare("phase2", "tables", "Phase 2", "Phase 3 (final)",
+            "The lists change because the rating changed definition: players whose pressure results came with "
+            "good impact or consistency numbers but a modest underlying level move down, and players with a high "
+            "leverage-weighted level move up. Ranks 6 to 12 are separated by a fraction of a rating point in both "
+            "versions and are close to interchangeable.", phase3=True)
 
     # ---- dropdown block -------------------------------------------------------------------------------------------
     A("## Exact dropdown selections\n")

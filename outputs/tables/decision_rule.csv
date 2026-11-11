@@ -1,3 +1,3 @@
 role,player_id,player_name,primary_rank,grid_top10_prob,action
 batter,,,,,no primary top-10 player below the threshold; primary list kept
-bowler,2633,Jason Holder,10,0.31378820184790335,"below threshold, kept (no outsider at or above threshold)"
+bowler,4900,Wanindu Hasaranga,10,0.3977335544499724,"below threshold, kept (no outsider at or above threshold)"

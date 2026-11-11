@@ -222,3 +222,27 @@ def test_no_ai_attribution_in_commit_messages():
         pytest.skip("git history not available")
     assert "—" not in log
     assert not BANNED.search(log)
+
+
+# ---- phase 3 ----------------------------------------------------------------------------------------
+def test_rating_is_the_documented_phase3_choice():
+    w = CFG["composite_weights"]
+    assert w["level"] == 1.0 and w["impact"] == w["consistency"] == w["delta"] == 0.0
+    assert CFG["ridge"]["lev_alpha"] == 1.0
+    assert abs(sum(CFG["composite_weights_spec"].values()) - 1.0) < 1e-9
+
+
+@pytest.mark.parametrize("role", ["bat", "bowl"])
+def test_adopted_rating_beats_spec_composite_on_heldout_prediction(role):
+    t = T("phase3_final_candidates.csv")
+    t = t[t.role == role].set_index("candidate")
+    assert t.loc["lev-level a=1", "d_nrae_vs_spec"] > 2 * t.loc["lev-level a=1", "d_nrae_se"]
+    assert t.loc["lev-level a=1", "pred_nrae"] > t.loc["spec composite (phase 1-2)", "pred_nrae"]
+    tt = T("phase3_temporal.csv").query("role == @role").set_index("candidate").pred_nrae_2025_26
+    assert tt["lev-level a=1"] > tt["spec composite (phase 1-2)"]
+
+
+def test_earlier_results_are_preserved():
+    for d in ("phase1", "phase2"):
+        for f in ("top10_batters.csv", "top10_bowlers.csv"):
+            assert os.path.exists(os.path.join(ROOT, "outputs", d, f))

@@ -354,3 +354,55 @@ RR's 2027 purse and slots, and availability of every player.
 **D-29 Phase 2 experiments not re-run.** The override changes one string that only the wicket check reads,
 so no experiment metric can move. The scorecard in `phase2_experiments.csv` stands. Every other table was
 regenerated from scratch.
+
+## I. Phase 3: best rating the supplied data can support
+
+Goal given: improve the model in any way possible using only the supplied datasets. Rule: judge on
+held-out predictive validity, not on who appears in the lists.
+
+**D-30 New yardstick.** Rating-versus-rating split-half correlation (phase 2) can reward stable noise.
+Replaced for selection by held-out prediction: rate from half A of the matches, correlate with the same
+players' raw pressure NRAE and WPA per 100 balls in half B (weighted Spearman, weights = held-out pressure
+balls), 20 random splits in both directions, paired across candidates. A 2022-24 to 2025-26 test was
+reserved for confirmation. Selection rule written before adopting: highest sum of the four random-split
+correlations, and it must beat the old composite on the temporal NRAE check. Stages 12 and 13.
+
+**D-31 Findings (outputs/tables/phase3_candidates.csv).** Used alone and predicting held-out pressure NRAE:
+Level 0.051 (batters) and 0.129 (bowlers); delta 0.035 and 0.090; consistency -0.005 and 0.087; impact
+-0.037 and 0.084; old composite 0.035 and 0.115. The three components that held 60% of the specified
+weight predicted nothing beyond Level, and impact was negative for batters.
+
+**D-32 Candidate: leverage-weighted level.** The ridge is refitted with every ball weighted by its leverage
+(power 1, weights clipped to 0.05 to 10 and normalised to mean 1). It is a continuous version of the pressure
+definition (no cutoff, no discarded balls) and it uses far more data than the 20% pressure sample. Paired
+against the old composite, held-out NRAE: batters +0.025 (SE 0.008), bowlers +0.024 (SE 0.007); held-out
+WPA: batters +0.019 (SE 0.007), bowlers -0.003 (SE 0.006). Temporal confirmation beats the old composite on
+NRAE in both groups (0.128 against 0.111 and 0.308 against 0.255). Leverage power 2 and power 0.5 are worse
+or equal. Recomputed after retuning the ridge penalties (3,000 and 30,000 for both groups): same picture.
+
+**D-33 Adopted as post-hoc change P-2.** `config.json`: `ridge.lev_alpha` 1.0 and `composite_weights`
+level 1, others 0. The specified weights live on as `composite_weights_spec`, used by the old-composite
+comparison and by the sensitivity configuration "spec weights". `sensitivity_weights` (0.7, 0.1, 0.1, 0.1)
+centre the Dirichlet draws so the weight grid still tests the other components. Phase 1 and phase 2
+results are kept in `outputs/phase1/` and `outputs/phase2/`.
+
+**D-34 Caveats recorded, not hidden.**
+- On the temporal test the plain unweighted level scores higher than the leverage-weighted level for
+  batters (NRAE 0.174 against 0.128, WPA 0.079 against 0.010) and the old composite is higher on WPA for
+  bowlers. One draw of about 100 players has no usable standard error. The random-split evidence, which
+  has 40 trials per candidate, favours leverage weighting. The choice is a judgement between the two.
+- The selection used the same random splits that were explored, so some optimism is expected. The
+  temporal split was never used for choosing.
+- Absolute predictive correlations stay small (batters about 0.06, bowlers about 0.14). Split-half
+  reliability of the rating rose from 0.06 to 0.10 (batters) and 0.12 to 0.16 (bowlers).
+- The brief asks for consistency and for a comparison with a player's usual level. Both are still computed,
+  shown and tested as sensitivity configurations; the data simply do not support giving them weight.
+- Checked for role bias: correlation of the rating with death-over share, chase share and weak-opposition
+  share is between -0.06 and 0.10 for both groups.
+
+**D-35 Tried and rejected.** Averaging the five win-probability models: log loss 0.5217 against 0.5220,
+no gain, win probability unchanged. Rating variants that mix level with impact (0.8/0.2, 0.7/0.3) gain on
+batter WPA but lose on NRAE; none beat plain leverage-weighted level on the sum of the four correlations.
+
+**D-36 Decision rule outcome.** No batter below 0.40 grid frequency. Bowler Wanindu Hasaranga (rank 10,
+grid 0.398) is below it; no outsider reaches 0.40, so the primary list stands.
