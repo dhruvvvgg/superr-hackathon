@@ -1,0 +1,25 @@
+role,method,trials,score,objective,se,corr_nrae_target,corr_wpa_target,players
+bat,v2 chosen,tuning trials,nrae,0.0434,0.0211,0.0555,0.0313,112.0000
+bat,reference,tuning trials,nrae,0.0434,0.0211,0.0555,0.0313,112.0000
+bat,raw NRAE,tuning trials,raw NRAE,-0.0234,0.0155,-0.0083,-0.0386,112.0000
+bat,raw strike rate,tuning trials,raw strike rate,0.0217,0.0173,0.0744,-0.0310,112.0000
+bat,unweighted level (alpha 0),tuning trials,nrae,0.0223,0.0167,0.0362,0.0084,112.0000
+bat,almost no shrinkage (lam 30),tuning trials,nrae,0.0413,0.0187,0.0624,0.0202,112.0000
+bat,v2 chosen,confirmation trials,nrae,0.0651,0.0126,0.0936,0.0366,121.0909
+bat,reference,confirmation trials,nrae,0.0651,0.0126,0.0936,0.0366,121.0909
+bat,raw NRAE,confirmation trials,raw NRAE,0.0090,0.0130,0.0347,-0.0166,121.0909
+bat,raw strike rate,confirmation trials,raw strike rate,0.0278,0.0121,0.0866,-0.0309,121.0909
+bat,unweighted level (alpha 0),confirmation trials,nrae,0.0376,0.0144,0.0643,0.0108,121.0909
+bat,almost no shrinkage (lam 30),confirmation trials,nrae,0.0353,0.0141,0.0650,0.0056,121.0909
+bowl,v2 chosen,tuning trials,nrae,0.1417,0.0165,0.1600,0.1234,110.0000
+bowl,reference,tuning trials,nrae,0.1143,0.0158,0.1279,0.1006,110.0000
+bowl,raw NRAE,tuning trials,raw NRAE,0.1203,0.0142,0.1260,0.1147,110.0000
+bowl,raw economy (negated),tuning trials,raw economy (negated),0.0919,0.0183,0.1265,0.0572,110.0000
+bowl,unweighted level (alpha 0),tuning trials,nrae,0.0890,0.0188,0.1023,0.0757,110.0000
+bowl,almost no shrinkage (lam 30),tuning trials,nrae,0.1153,0.0160,0.1250,0.1057,110.0000
+bowl,v2 chosen,confirmation trials,nrae,0.1888,0.0171,0.2033,0.1743,116.1364
+bowl,reference,confirmation trials,nrae,0.1526,0.0150,0.1642,0.1410,116.1364
+bowl,raw NRAE,confirmation trials,raw NRAE,0.1205,0.0156,0.1298,0.1112,116.1364
+bowl,raw economy (negated),confirmation trials,raw economy (negated),0.0877,0.0152,0.1253,0.0501,116.1364
+bowl,unweighted level (alpha 0),confirmation trials,nrae,0.1463,0.0161,0.1553,0.1373,116.1364
+bowl,almost no shrinkage (lam 30),confirmation trials,nrae,0.1557,0.0128,0.1604,0.1511,116.1364

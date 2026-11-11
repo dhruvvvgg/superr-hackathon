@@ -406,3 +406,52 @@ batter WPA but lose on NRAE; none beat plain leverage-weighted level on the sum 
 
 **D-36 Decision rule outcome.** No batter below 0.40 grid frequency. Bowler Wanindu Hasaranga (rank 10,
 grid 0.398) is below it; no outsider reaches 0.40, so the primary list stands.
+
+## J. V2: independent rebuild of the rating, chosen by forward-in-time prediction
+
+Instruction: set the earlier specification aside, think only from the six CSVs and the problem statement,
+and build the best model possible. Reused as is: the verified ball-level preparation (stages 01 to 06).
+Redesigned: the rating model, its tuning and its validation. Outputs in `outputs/v2/`, report in
+`docs/V2_FINDINGS.md`. The older results stay in `outputs/tables/`, `outputs/phase1/`, `outputs/phase2/`.
+
+**D-37 Question and yardstick.** The rating should predict a player's future pressure performance. Trials fit
+on part of the data and score against the same players' later pressure NRAE and WPA per 100 balls (weighted
+Spearman). Tuning trials: five rolling six-month windows plus 20 random half splits. Confirmation trials
+(never used to choose): two later windows plus 20 random half splits with a different seed.
+
+**D-38 First attempt overfit, and was rejected.** A free coordinate search on three overlapping 12-month
+folds (about 70 players each) pushed the batter ridge penalty to the edge of its grid, chose a WPA score
+variant, and scored 0.03 and -0.02 on the confirmation folds against 0.24 and 0.08 for the plain setup. Cause:
+about 70 players per fold gives a standard error near 0.12 per fold, so the search was fitting noise. It is
+kept in the log because it is the reason for the rule below.
+
+**D-39 Adoption rule.** Start from a stated reference (leverage power 1, 24-month half-life, ridge penalty
+3,000, associates at 0.5, no role prior, opponent adjustment on). Move an option only if the paired
+difference in the objective is above two standard errors across 25 tuning trials. Result: nothing moves for
+batters; for bowlers recency decay is removed (z 3.6) and associates go to full weight (z 3.6). Role prior,
+WPA or blended scores, other leverage powers and other penalties never pass.
+
+**D-40 Confirmation (outputs/v2/confirm.csv).** Held-out correlation, mean over 22 trials: batters 0.065
+against 0.028 for raw pressure strike rate and 0.009 for raw pressure NRAE; bowlers 0.189 against 0.088 for
+raw pressure economy and 0.120 for raw pressure NRAE; the reference setup scores 0.153 for bowlers. For
+batters leverage weighting and shrinkage each add about 0.03; for bowlers they are within noise on the
+confirmation trials and rest on the tuning evidence (z 3.0 for leverage weighting).
+
+**D-41 Eligibility.** At least 40 pressure balls (the bar used in validation), 150 balls in total and an
+appearance in 2025 or 2026. This widens the pool to 180 batters and 189 bowlers. The shrinkage handles small
+samples, so a higher bar is not needed for fairness.
+
+**D-42 Rating scale.** The rating is the ridge player effect (plus nothing else) in NRAE per 100 balls, i.e.
+runs per 100 balls above an average player in the same situation. No z-scoring, no composite.
+
+**D-43 Result.** Batters: the same ten players as the phase 3 build, in a different order. Bowlers: nine of
+ten the same; Lockie Ferguson replaces Wanindu Hasaranga because recency decay was removed. Two designs
+agreeing on the batter set is a robustness finding, not a tuning outcome.
+
+**D-44 Which list is final.** V2 is the recommended submission, because every option behind it was chosen on
+forward-in-time evidence with an overfitting guard and confirmed on trials it never saw. The phase 3 lists
+remain available and are marked as superseded in `docs/FINDINGS.md`.
+
+**D-45 Known limits.** Baselines, win probability and pressure flags are fitted on all matches, so rolling
+trials still pass a little league-wide information backwards. It cannot favour a player. Rolling windows
+overlap in their training data.

@@ -246,3 +246,44 @@ def test_earlier_results_are_preserved():
     for d in ("phase1", "phase2"):
         for f in ("top10_batters.csv", "top10_bowlers.csv"):
             assert os.path.exists(os.path.join(ROOT, "outputs", d, f))
+
+
+# ---- v2 ---------------------------------------------------------------------------------------------
+V2 = os.path.join(ROOT, "outputs", "v2")
+
+
+@pytest.mark.parametrize("label", ["batters", "bowlers"])
+def test_v2_top10_lists(label):
+    mp = raw("competition_team_player_mapping")
+    t = pd.read_csv(os.path.join(V2, f"top10_{label}.csv"))
+    assert len(t) == 10 and t.player_id.is_unique and list(t.final_rank) == list(range(1, 11))
+    name_of = mp.drop_duplicates("player_id").set_index("player_id").player_name
+    assert (t.dropdown_name.values == name_of.loc[t.player_id].values).all()
+    full = pd.read_csv(os.path.join(V2, f"ratings_{label}.csv"))
+    assert full.player_id.is_unique and (full.n_press_balls >= 40).all() and (full.n_total_balls >= 150).all()
+    assert (t.rating.values[:-1] >= t.rating.values[1:]).all()
+    assert (t.boot_rating_p10 <= t.rating).all() and (t.rating <= t.boot_rating_p90).all()
+
+
+def test_v2_beats_naive_statistics_on_confirmation_trials():
+    c = pd.read_csv(os.path.join(V2, "confirm.csv"))
+    c = c[c.trials == "confirmation trials"]
+    for role, naive in [("bat", ["raw strike rate", "raw NRAE"]), ("bowl", ["raw economy (negated)", "raw NRAE"])]:
+        d = c[c.role == role].set_index("method")
+        for n in naive:
+            assert d.loc["v2 chosen", "objective"] > d.loc[n, "objective"]
+        assert d.loc["v2 chosen", "objective"] >= d.loc["reference", "objective"] - 1e-9
+
+
+def test_v2_adoption_rule_respected():
+    log = pd.read_csv(os.path.join(V2, "search_log.csv"))
+    chosen = pd.read_json(os.path.join(V2, "chosen_config.json"))
+    for role in ("bat", "bowl"):
+        cfg = chosen[role]["cfg"]
+        ref = dict(half_life=24.0, alpha=1.0, assoc_w=0.5, lam=3000.0, role_prior=False, opp_adjust=True)
+        for k, v in ref.items():
+            cv = cfg[k]
+            if (cv is None and v is None) or cv == v:
+                continue
+            rows = log[(log.role == role) & (log.option == k)]
+            assert (rows.z > 2).any(), f"{role}.{k} moved without evidence"

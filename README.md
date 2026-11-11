@@ -2,7 +2,7 @@
 
 A reproducible pipeline that defines pressure in T20 cricket from win-probability leverage, measures how
 batters and bowlers perform under it relative to an identity-free baseline, and ranks the most reliable
-players. Results and method are in `docs/FINDINGS.md`. Every decision is logged in `docs/DECISIONS.md`.
+players. The recommended final answer is `docs/V2_FINDINGS.md` (outputs in `outputs/v2/`). `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
 
 ## Run
 
@@ -45,6 +45,9 @@ src/09_rr_fit.py            Rajasthan Royals profile, gap analysis and auction s
 src/10_audit.py             scorecard and integrity audit
 src/12_improve.py           phase 3: candidate ratings scored on held-out predictive validity
 src/13_improve2.py          phase 3: focused candidates, paired comparisons, temporal holdout
+src/20_v2_search.py         V2: pick rating options by forward-in-time prediction (2-standard-error rule)
+src/21_v2_rate.py           V2: final ratings and bootstrap intervals (outputs/v2/)
+src/22_v2_report.py         V2: figures and docs/V2_FINDINGS.md
 src/11_report.py            writes docs/FINDINGS.md from the output tables
 src/phase2_experiments.py   side-by-side model variants scored on model quality
 src/*_lib.py, common.py     shared code

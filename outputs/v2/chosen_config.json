@@ -1,0 +1,24 @@
+{
+ "bat": {
+  "cfg": {
+   "half_life": 24.0,
+   "alpha": 1.0,
+   "assoc_w": 0.5,
+   "lam": 3000.0,
+   "role_prior": false,
+   "opp_adjust": true
+  },
+  "score": "nrae"
+ },
+ "bowl": {
+  "cfg": {
+   "half_life": null,
+   "alpha": 1.0,
+   "assoc_w": 1.0,
+   "lam": 3000.0,
+   "role_prior": false,
+   "opp_adjust": true
+  },
+  "score": "nrae"
+ }
+}

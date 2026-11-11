@@ -80,6 +80,9 @@ def main():
     A = L.append
 
     A("# FINDINGS: who delivers under pressure\n")
+    A("> **Newer build available.** `docs/V2_FINDINGS.md` is an independent second design whose every option was "
+      "chosen by forward-in-time prediction. It is the recommended final answer. This document remains the full "
+      "record of the data preparation, validation, audit and the earlier ratings.\n")
     A("Every number below is read from a file in `outputs/tables/` when the pipeline runs "
       "(`src/11_report.py`). The file is named next to each table. Figures are in `outputs/figures/`.\n")
 
