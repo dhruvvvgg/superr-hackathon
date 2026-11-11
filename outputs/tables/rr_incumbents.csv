@@ -1,28 +1,28 @@
 player_id,player_name,ipl2026_matches,national_team,overseas_derived,batter_balls_ipl2026,batter_eligible,batter_rank,batter_rating,batter_role,bowler_balls_ipl2026,bowler_eligible,bowler_rank,bowler_rating,bowler_role,regular
-6819,Yashasvi Jaiswal,16,India,False,248,True,41,0.39016,opener,0,False,,,,True
-7260,Dhruv Jurel,16,India,False,330,True,140,-0.809326,middle order/finisher (5+),0,False,,,,True
-3298,Jofra Archer,16,England,True,47,False,,,middle order/finisher (5+),348,True,39,0.543971,"pace, powerplay-leaning",True
-50284,Vaibhav Sooryavanshi,16,India,False,313,True,1,2.76804,opener,0,False,,,,True
-8182,Donovan Ferreira,15,South Africa,True,177,True,65,-0.0285207,middle order/finisher (5+),18,False,,,,True
-152,Ravindra Jadeja,14,India,False,197,True,67,-0.0569425,middle order/finisher (5+),198,True,74,0.0317418,spinner,True
-6423,Riyan Parag,14,India,False,186,True,30,0.640515,top/middle order (3-4),24,False,,,,True
-7312,Nandre Burger,13,South Africa,True,9,False,,,,249,True,80,-0.0216336,"pace, powerplay-leaning",True
-67036,Brijesh Sharma,13,none in data (uncapped),False,4,False,,,,273,True,96,-0.190067,"pace, death-leaning",True
-7503,Ravi Bishnoi,9,India,False,3,False,,,,144,True,148,-0.871718,spinner,True
-3297,Shimron Hetmyer,8,West Indies,True,62,True,131,-0.699161,middle order/finisher (5+),0,False,,,,True
+6819,Yashasvi Jaiswal,16,India,False,248,True,40,0.400767,opener,0,False,,,,True
+7260,Dhruv Jurel,16,India,False,330,True,132,-0.662335,middle order/finisher (5+),0,False,,,,True
+3298,Jofra Archer,16,England,True,47,False,,,middle order/finisher (5+),348,True,32,0.646916,"pace, powerplay-leaning",True
+50284,Vaibhav Sooryavanshi,16,India,False,313,True,1,2.68396,opener,0,False,,,,True
+8182,Donovan Ferreira,15,South Africa,True,177,True,57,0.0892157,middle order/finisher (5+),18,False,,,,True
+152,Ravindra Jadeja,14,India,False,197,True,71,-0.0810993,middle order/finisher (5+),198,True,80,-0.0396719,spinner,True
+6423,Riyan Parag,14,India,False,186,True,36,0.481055,top/middle order (3-4),24,False,,,,True
+7312,Nandre Burger,13,South Africa,True,9,False,,,,249,True,96,-0.171826,"pace, powerplay-leaning",True
+67036,Brijesh Sharma,13,none in data (uncapped),False,4,False,,,,273,True,84,-0.0834729,"pace, death-leaning",True
+7503,Ravi Bishnoi,9,India,False,3,False,,,,144,True,149,-0.879122,spinner,True
+3297,Shimron Hetmyer,8,West Indies,True,62,True,102,-0.387289,middle order/finisher (5+),0,False,,,,True
 41503,Yash Punja,8,none in data (uncapped),False,0,False,,,,180,False,,,spinner,True
-2436,Dasun Shanaka,7,Sri Lanka,True,46,True,116,-0.525597,middle order/finisher (5+),36,True,47,0.344347,"pace, all phases",True
+2436,Dasun Shanaka,7,Sri Lanka,True,46,True,113,-0.500775,middle order/finisher (5+),36,True,52,0.259381,"pace, all phases",True
 25139,Shubham Dubey,7,none in data (uncapped),False,58,False,,,middle order/finisher (5+),0,False,,,,True
-6806,Tushar Deshpande,7,India,False,14,False,,,,126,True,110,-0.328587,"pace, death-leaning",True
-2411,Sandeep Sharma,6,none in data (uncapped),False,0,False,,,,100,True,125,-0.520639,"pace, death-leaning",False
+6806,Tushar Deshpande,7,India,False,14,False,,,,126,True,112,-0.330993,"pace, death-leaning",True
+2411,Sandeep Sharma,6,none in data (uncapped),False,0,False,,,,100,True,116,-0.396105,"pace, death-leaning",False
 7269,Sushant Mishra,2,none in data (uncapped),False,3,False,,,,38,False,,,"pace, all phases",False
 43798,Lhuan Pretorius,2,South Africa,True,8,False,,,,0,False,,,,False
-1487,Adam Milne,1,New Zealand,True,2,False,,,,20,True,109,-0.32752,,False
+1487,Adam Milne,1,New Zealand,True,2,False,,,,20,True,114,-0.370715,,False
 60700,Ravi Singh,1,none in data (uncapped),False,2,False,,,,0,False,,,,False
-4409,Sam Curran,0,England,True,0,True,66,-0.031858,,0,True,95,-0.174441,,False
+4409,Sam Curran,0,England,True,0,True,67,-0.0392619,,0,True,101,-0.197019,,False
 7545,Kuldeep Sen,0,none in data (uncapped),False,0,False,,,,0,False,,,,False
 8580,Yudhvir Singh,0,none in data (uncapped),False,0,False,,,,0,False,,,,False
-26663,Kwena Maphaka,0,South Africa,True,0,False,,,,0,True,121,-0.471625,,False
+26663,Kwena Maphaka,0,South Africa,True,0,False,,,,0,True,122,-0.470538,,False
 43965,Emanjot Singh Chahal,0,none in data (uncapped),False,0,False,,,,0,False,,,,False
 47523,Aman Rao Perala,0,none in data (uncapped),False,0,False,,,,0,False,,,,False
 48557,Vignesh Puthur,0,none in data (uncapped),False,0,False,,,,0,False,,,,False

@@ -1,0 +1,45 @@
+{
+ "base": {
+  "verdict": "reference",
+  "note": "Phase 1 specification, the reference for every comparison."
+ },
+ "target_recon": {
+  "verdict": "rejected",
+  "note": "Out-of-fold log loss is worse (0.5236 against 0.5220; chases 0.4008 against 0.3976). The result-anchored target stays."
+ },
+ "wp_gbm": {
+  "verdict": "rejected",
+  "note": "Out-of-fold log loss is clearly worse (0.5327 against 0.5220) and calibration is worse. Batter split-half reliability happens to be higher with it, but the rule requires the model's own metric to improve first, and a worse win-probability model is not a sound basis for leverage."
+ },
+ "wp_nomom": {
+  "verdict": "rejected",
+  "note": "Log loss is the same (0.5221), the calibration gap is larger (0.036 against 0.026) and leverage tracks realised swings less well (Spearman 0.46 against 0.57). No improvement in its own metric, so not adopted, although bowler reliability was higher."
+ },
+ "lev_rms": {
+  "verdict": "rejected",
+  "note": "Leverage tracks realised win-probability swings less well (Spearman 0.51 against 0.57) and batter reliability falls."
+ },
+ "role_aware": {
+  "verdict": "ADOPTED",
+  "note": "Every baseline metric improves: batter expected-runs RMSE 1.7200 to 1.7107, bowler 1.7554 to 1.7459, both wicket log losses fall, and the ridge cross-validated error falls for both groups (7.599 to 7.577 and 7.612 to 7.590). Split-half reliability moves within two standard errors (batters 0.080 to 0.060, bowlers 0.113 to 0.119). Bootstrap stability is better for bowlers and slightly worse for batters. Adopted under the rule as a post-hoc change."
+ },
+ "opp_ts": {
+  "verdict": "rejected",
+  "note": "Split-half reliability does not move beyond noise (batters 0.080 to 0.076, bowlers 0.113 to 0.116). The bowler and striker effects already carry opposition strength."
+ },
+ "prior_sd": {
+  "verdict": "rejected",
+  "note": "Bowler reliability rises by more than two standard errors (0.113 to 0.155) but batter reliability falls (0.080 to 0.053) and batter bootstrap stability is worse (rank-interval width 44.9 to 50.2). The rule requires stability not to worsen, so the pre-registered z-scoring stays. The audit concern about re-inflated noise is real in principle but the data do not show a gain from fixing it."
+ },
+ "role_prior": {
+  "verdict": "rejected",
+  "note": "On top of the role-aware baseline the scaling change again helps bowlers a little and hurts batters; neither move clears two standard errors."
+ },
+ "role_prior_opp": {
+  "verdict": "rejected",
+  "note": "No gain over the role-aware baseline alone."
+ },
+ "_summary": {
+  "note": "**Reading the scorecard honestly.** Split-half reliability swings by more than its split-to-split standard error whenever the pressure sample itself changes (compare the win-probability variants), so the standard error understates the real uncertainty of this yardstick. No variant lifts reliability to a level that would change the main caveat of this document: the rating is a noisy best estimate. One change was adopted, the role-aware baseline, because it makes the baseline measurably more accurate and removes a bias against batters who face many first balls. Everything else in the pre-registered specification is unchanged."
+ }
+}

@@ -314,10 +314,11 @@ def main():
     fv = face[["role", "player_name", "death_over_balls", "eligible", "rank", "rating", "boot_top10_prob", "note"]].copy()
     fv["rank"] = fv["rank"].map(lambda v: "" if pd.isna(v) else f"{int(v)}")
     A(md(fv) + "\n")
-    A("Several famous finishers sit in the bottom half. Their numbers are reported, not adjusted. The usual "
-      "reasons in the tables are a pressure strike rate no better than the state-adjusted baseline for the "
-      "death overs, where the baseline is already very high, and dismissals in high-leverage chases that "
-      "cost win probability.\n")
+    A("Several famous finishers sit in the bottom half"
+      + (", even with the role-aware baseline that no longer penalises them for facing many first balls" if role_aware else "")
+      + ". Their numbers are reported, not adjusted. The usual reasons in the tables are a pressure strike rate "
+        "no better than the state-adjusted baseline for the death overs, where the baseline is already very "
+        "high, and dismissals in high-leverage chases that cost win probability.\n")
 
     # ---- 8 ------------------------------------------------------------------------------------------
     A("## 8. Robustness and persistence\n")
@@ -362,10 +363,17 @@ def main():
       "RR minus the league, with RR's rank among the ten teams. The table file also splits chasing and setting.\n")
     A(md(k[["discipline", "year", "phase", "rr_balls", "rr_nrae_per100", "league_mean_nrae_per100", "rr_minus_league", "rr_rank_of_teams"]], 1) + "\n")
     g26 = k[(k.year == 2026) & (k.rr_rank_of_teams >= 7)].sort_values("rr_minus_league")
-    A("In IPL 2026 RR ranked seventh or worse under pressure in: "
-      + ", ".join(f"{r.discipline} in the {r.phase} ({r.rr_minus_league:+.0f} per 100 balls, rank {r.rr_rank_of_teams})" for r in g26.itertuples())
-      + ". Each cell holds about 100 to 150 balls, so treat single cells as indications. The public season "
-        "reviews point the same way: a soft middle order and no second strike bowler alongside Jofra Archer.\n")
+    below = k[(k.year == 2026) & (k.rr_minus_league < 0) & (k.rr_rank_of_teams < 7)]
+    bowl_gap = bool(((g26.discipline == "bowling").sum() + (below.discipline == "bowling").sum()) > 0)
+    A("In IPL 2026 RR ranked seventh or worse of ten under pressure in: "
+      + (", ".join(f"{r.discipline} in the {r.phase} overs ({r.rr_minus_league:+.0f} per 100 balls, rank {r.rr_rank_of_teams})" for r in g26.itertuples()) or "no phase")
+      + ". Below the league average but ranked better than seventh: "
+      + (", ".join(f"{r.discipline} in the {r.phase} overs ({r.rr_minus_league:+.0f}, rank {r.rr_rank_of_teams})" for r in below.itertuples()) or "none")
+      + ". Each cell holds about 100 to 150 balls, so treat single cells as indications. Public season reviews "
+        "name two weaknesses, the middle order and the lack of a second strike bowler beside Jofra Archer. "
+      + ("The data agree on the middle-order batting. " if ((g26.discipline == "batting") & (g26.phase == "middle")).any() else "The data do not single out the middle-order batting. ")
+      + ("They also show pressure bowling below the league in at least one phase, consistent with the second point."
+         if bowl_gap else "They do not show RR's pressure bowling below the league in any phase in 2026, so the second point is not supported by this measure.") + "\n")
     A("**RR regulars in IPL 2026** (`rr_incumbents.csv`; regular = 7 or more matches):\n")
     ii = inc[inc.regular][["player_name", "ipl2026_matches", "overseas_derived", "batter_role", "batter_rank", "batter_rating", "bowler_role", "bowler_rank", "bowler_rating"]].copy()
     for c_ in ("batter_rank", "bowler_rank"):
@@ -431,8 +439,10 @@ def main():
     sm_ = pd.concat([tb, tw]).sort_values("n_press_balls").iloc[0]
     A(f"- The smallest pressure sample in the lists is {sm_.player_name} with {int(sm_.n_press_balls)} pressure balls. "
       "He qualifies under the pre-registered thresholds and is kept; his interval is wide.")
+    io = sc[sc.config.isin(["IPL only", "T20I only"])]
     A("- The ridge and empirical Bayes estimators agree on the composite but only moderately on Level "
-      "(section 5), and the IPL-only and T20I-only configurations each keep about half of the top 10.")
+      "(section 5). Restricting to one competition changes the lists: top-10 overlap with the primary is "
+      + "; ".join(f"{r.config}, {r.role}s {r.top10_overlap_with_primary} of 10" for r in io.itertuples()) + ".")
     A("- The fitted extras values improve on the 1-run rule by a few hundredths of a run. The calibration "
       "is reported because it was required, not because it matters much.")
     A("- Several of the highest-volume death-over players rank poorly (section 7). The model may be right, or "
@@ -489,25 +499,28 @@ def main():
         n_r = full_new.set_index("player_id")["rank"]
         zc = ["z_level", "z_impact", "z_consistency", "z_delta"]
         fo, fn = full_old.set_index("player_id"), full_new.set_index("player_id")
-        changed = [p for p in list(old.player_id) + list(new.player_id) if (p in set(old.player_id)) != (p in set(new.player_id))]
-        seen = set()
-        for p in changed:
-            if p in seen:
+        both = list(dict.fromkeys(list(old.player_id) + list(new.player_id)))
+        lab = {"z_level": "level", "z_impact": "impact", "z_consistency": "consistency", "z_delta": "delta"}
+        any_change = False
+        for p in both:
+            if p not in fo.index or p not in fn.index or int(o_r[p]) == int(n_r[p]):
                 continue
-            seen.add(p)
-            nm = fn.player_name.get(p, fo.player_name.get(p))
-            if p in fo.index and p in fn.index:
-                contrib_o = {c: CFG["composite_weights"][c[2:]] * fo.loc[p, c] for c in zc}
-                contrib_n = {c: CFG["composite_weights"][c[2:]] * fn.loc[p, c] for c in zc}
-                dd = {c: contrib_n[c] - contrib_o[c] for c in zc}
-                big = max(dd, key=lambda c: abs(dd[c]))
-                A(f"- {nm}: rank {int(o_r[p])} to {int(n_r[p])}. Largest change in rating contribution: "
-                  f"{big[2:]} ({contrib_o[big]:+.2f} to {contrib_n[big]:+.2f}); level z {fo.loc[p, 'z_level']:+.2f} to {fn.loc[p, 'z_level']:+.2f}.")
-            else:
-                A(f"- {nm}: eligible in only one of the two versions.")
-        if not changed:
-            A("- Same ten players. " + ("Order unchanged." if list(old.player_id) == list(new.player_id) else "Order changed within the list."))
+            any_change = True
+            dd = {c: CFG["composite_weights"][c[2:]] * (fn.loc[p, c] - fo.loc[p, c]) for c in zc}
+            big = max(dd, key=lambda c: abs(dd[c]))
+            status = ("enters the top 10" if p not in set(old.player_id) else
+                      "leaves the top 10" if p not in set(new.player_id) else "stays in the top 10")
+            A(f"- {fn.player_name[p]}: rank {int(o_r[p])} to {int(n_r[p])}, {status}. Rating {fo.loc[p, 'rating']:.2f} to "
+              f"{fn.loc[p, 'rating']:.2f}; the component that moved most is {lab[big]} "
+              f"({dd[big]:+.2f} rating points).")
+        if not any_change:
+            A("- No rank changed among these players.")
         A("")
+    A("Every difference has the same cause, the role-aware baseline (post-hoc change P-1). It stops charging "
+      "batters for the slow first balls of an innings and stops crediting bowlers for bowling to batters who "
+      "have just arrived. Ratings move by up to about half a point and neighbours swap places. "
+      "A player can gain a place while his own rating falls, when a neighbour falls further. "
+      "Ranks 9 to 12 are separated by a few hundredths of a rating point in both versions.\n")
     A(verdicts.get("_summary", {}).get("note", "") + "\n")
 
     # ---- dropdown block -------------------------------------------------------------------------------------------

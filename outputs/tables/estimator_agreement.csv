@@ -1,21 +1,21 @@
 role,quantity,n,spearman
-bat,level: ridge vs empirical Bayes,153,0.473192
-bat,delta: ridge vs empirical Bayes,153,0.842836
-bat,composite rating: ridge vs empirical Bayes,153,0.845855
+bat,level: ridge vs empirical Bayes,153,0.36037
+bat,delta: ridge vs empirical Bayes,153,0.839204
+bat,composite rating: ridge vs empirical Bayes,153,0.8003
 bat,top-10 overlap: ridge vs empirical Bayes,10,0.5
-bat,component correlation: impact vs level,153,0.191736
-bat,component correlation: consistency vs level,153,0.42124
-bat,component correlation: consistency vs impact,153,0.41984
-bat,component correlation: consistency vs delta,153,0.656782
-bat,component correlation: delta vs level,153,0.381107
-bat,component correlation: delta vs impact,153,0.658501
-bowl,level: ridge vs empirical Bayes,166,0.46182
-bowl,delta: ridge vs empirical Bayes,166,0.928642
-bowl,composite rating: ridge vs empirical Bayes,166,0.842273
-bowl,top-10 overlap: ridge vs empirical Bayes,10,0.6
-bowl,component correlation: impact vs level,166,0.356001
-bowl,component correlation: consistency vs level,166,0.340816
-bowl,component correlation: consistency vs impact,166,0.47393
-bowl,component correlation: consistency vs delta,166,0.558277
-bowl,component correlation: delta vs level,166,0.169337
-bowl,component correlation: delta vs impact,166,0.613212
+bat,component correlation: impact vs level,153,0.121065
+bat,component correlation: consistency vs level,153,0.301606
+bat,component correlation: consistency vs impact,153,0.444842
+bat,component correlation: consistency vs delta,153,0.655767
+bat,component correlation: delta vs level,153,0.270935
+bat,component correlation: delta vs impact,153,0.638568
+bowl,level: ridge vs empirical Bayes,166,0.455592
+bowl,delta: ridge vs empirical Bayes,166,0.875845
+bowl,composite rating: ridge vs empirical Bayes,166,0.831312
+bowl,top-10 overlap: ridge vs empirical Bayes,10,0.5
+bowl,component correlation: impact vs level,166,0.356678
+bowl,component correlation: consistency vs level,166,0.310473
+bowl,component correlation: consistency vs impact,166,0.480093
+bowl,component correlation: consistency vs delta,166,0.611399
+bowl,component correlation: delta vs level,166,0.283738
+bowl,component correlation: delta vs impact,166,0.647038

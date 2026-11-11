@@ -253,3 +253,40 @@ the ball data for that innings. The anchored target absorbs this.
 - Who is in the top 10 is not looked at when deciding. The lists are compared only after the decision.
 - Any adopted change is a post-hoc change to the pre-registered specification, and the phase 1 results
   stay in `outputs/phase1/`.
+
+**Results** (`outputs/tables/phase2_experiments.csv`; "before" is the phase 1 specification, tag `base`).
+
+| Attempt | Reason for trying | Own metric, before to after | Split-half rating, batters / bowlers (before 0.080 / 0.113, SE about 0.016) | Decision |
+|---|---|---|---|---|
+| Reconstructed target (`target_recon`) | the handover's target definition | WP log loss 0.5220 to 0.5236 (worse) | 0.067 / 0.117 | rejected, anchored target stays |
+| Monotone LightGBM win probability (`wp_gbm`) | originally pre-registered model | WP log loss 0.5220 to 0.5327 (worse) | 0.172 / 0.106 | rejected |
+| Win probability without momentum (`wp_nomom`) | simpler model | log loss 0.5220 to 0.5221, calibration gap 0.026 to 0.036, leverage validity 0.57 to 0.46 | 0.126 / 0.224 | rejected |
+| RMS leverage (`lev_rms`) | weights large swings more | leverage versus realised swing, Spearman 0.57 to 0.51 (worse) | 0.025 / 0.155 | rejected |
+| Role-aware baseline (`role_aware`) | audit finding: new batters score 27 per 100 below baseline | batter xRuns RMSE 1.7200 to 1.7107, bowler 1.7554 to 1.7459; xWkt log loss 0.2079 to 0.2075 and 0.2050 to 0.2046; ridge CV error 7.599 to 7.577 and 7.612 to 7.590 | 0.060 / 0.119 (both within 2 SE) | **adopted** |
+| Opposition-team-by-season term (`opp_ts`) | explicit opposition-strength rating | ridge CV error 7.5987 to 7.5979 and 7.6115 to 7.6119 | 0.076 / 0.116 | rejected, no gain |
+| Prior-SD scaling of components (`prior_sd`) | audit finding: z-scoring re-inflates shrunk noise | not applicable | 0.053 / 0.155; batter rank-interval width 44.9 to 50.2 (worse) | rejected, fails the stability condition |
+| Role-aware plus prior-SD (`role_prior`) | combination | as role-aware | 0.035 / 0.145 against 0.060 / 0.119 for role-aware alone | rejected |
+| Role-aware, prior-SD and opposition term (`role_prior_opp`) | combination | as role-aware | 0.028 / 0.149 | rejected |
+
+Not run as separate variants, with the reason:
+- Better handling of extras: the fitted values against the 1-run rule are already compared in
+  `extras_calibration.csv` (margin MAE 2.14 against 2.17, out of sample 2.17). The real gain came from
+  anchoring the target, tested above.
+- Bowler matchup adjustment: batter hand, pace or spin and bowling type are already features of both
+  baselines, so the baseline is matchup-aware; the ridge then adjusts for the individual opponent.
+
+**Post-hoc change P-1: role-aware baseline.** `config.json` `baseline.role_aware` is now true. The
+expected-runs and expected-wicket models for batters and bowlers additionally see the number of balls the
+striker has already faced in the innings and his batting position. Evidence as in the table. This changes
+pre-registration item 6. It was adopted under the rule written before the results were read. The phase 1
+lists are in `outputs/phase1/` and are shown next to the final lists in FINDINGS, "What changed in
+phase 2".
+
+**What the experiments say about the yardstick itself.** Split-half reliability moved by up to 0.11
+between variants that only change which balls are flagged as pressure, far more than its split-to-split
+standard error. It is a noisy yardstick at this sample size. That is why the rule put each change's own
+out-of-fold metric first and used reliability as a guard, and why two variants with higher reliability
+in one group (`wp_gbm`, `wp_nomom`) were still rejected.
+
+**The component-scaling idea was mine and it failed its test.** It is logged as rejected, with the
+numbers, and the pre-registered z-scoring stays.

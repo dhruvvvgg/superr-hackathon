@@ -1,97 +1,97 @@
 discipline,year,situation,phase,sample,rr_nrae_per100,rr_balls,league_mean_nrae_per100,rr_rank_of_teams,n_teams,rr_wpa_total,rr_minus_league
-batting,2025,setting,powerplay,pressure,183.101,10,11.7772,1,10,0.122082,171.324
-batting,2025,setting,powerplay,all balls,34.6166,144,12.6615,2,10,0.346367,21.9551
-batting,2025,setting,middle,pressure,-8.94129,42,4.34077,6,10,-0.0313747,-13.2821
-batting,2025,setting,middle,all balls,-28.7695,216,-3.51942,10,10,-0.610914,-25.2501
-batting,2025,setting,death,pressure,-4.97646,65,-1.18783,6,10,-0.234023,-3.78863
-batting,2025,setting,death,all balls,-7.20436,120,4.98176,8,10,-0.191613,-12.1861
-batting,2025,setting,all,pressure,9.67529,117,4.33161,6,10,-0.143316,5.34368
-batting,2025,setting,all,all balls,-4.36239,480,3.45848,7,10,-0.45616,-7.82087
-batting,2025,chasing,powerplay,pressure,25.4446,53,11.3098,4,10,-0.38106,14.1349
-batting,2025,chasing,powerplay,all balls,29.3869,361,7.02851,2,10,0.926999,22.3584
-batting,2025,chasing,middle,pressure,22.0255,108,11.2186,5,10,0.472877,10.8068
-batting,2025,chasing,middle,all balls,1.48236,542,9.57905,9,10,-0.124022,-8.09669
-batting,2025,chasing,death,pressure,-28.9901,105,-12.8911,9,10,-3.14362,-16.099
-batting,2025,chasing,death,all balls,-7.82082,233,-6.6976,6,10,-3.29445,-1.12321
-batting,2025,chasing,all,pressure,2.56902,266,3.49401,6,10,-3.0518,-0.924987
-batting,2025,chasing,all,all balls,8.44178,1136,5.56079,3,10,-2.49147,2.88099
-batting,2025,all,powerplay,pressure,50.4695,63,11.5422,2,10,-0.258978,38.9273
-batting,2025,all,powerplay,all balls,30.8781,505,9.84728,1,10,1.27337,21.0309
-batting,2025,all,middle,pressure,13.3548,150,8.31436,6,10,0.441502,5.04043
-batting,2025,all,middle,all balls,-7.13823,758,2.97045,9,10,-0.734936,-10.1087
-batting,2025,all,death,pressure,-19.8084,170,-6.42133,8,10,-3.37764,-13.3871
-batting,2025,all,death,all balls,-7.61125,353,-0.0361111,8,10,-3.48606,-7.57514
-batting,2025,all,all,pressure,4.73987,383,3.90649,6,10,-3.19512,0.833378
-batting,2025,all,all,all balls,4.63856,1616,4.47242,7,10,-2.94763,0.166145
-batting,2026,setting,powerplay,pressure,95.6444,47,9.73229,2,10,0.0583598,85.9121
-batting,2026,setting,powerplay,all balls,26.5369,324,7.08299,2,10,0.677737,19.454
-batting,2026,setting,middle,pressure,-30.9628,47,3.89349,8,10,-0.0293232,-34.8563
-batting,2026,setting,middle,all balls,9.44352,487,6.42046,5,10,0.00635145,3.02306
-batting,2026,setting,death,pressure,4.3428,79,2.40483,5,10,-0.337046,1.93797
-batting,2026,setting,death,all balls,-7.94519,272,-3.61815,5,10,-0.238804,-4.32704
-batting,2026,setting,all,pressure,19.5556,173,4.96806,3,10,-0.30801,14.5875
-batting,2026,setting,all,all balls,10.1901,1083,4.14347,4,10,0.445284,6.04662
-batting,2026,chasing,powerplay,pressure,36.5715,42,5.76385,3,10,-0.247317,30.8077
-batting,2026,chasing,powerplay,all balls,37.6716,216,8.93726,1,10,0.773099,28.7343
-batting,2026,chasing,middle,pressure,10.335,51,-3.47889,5,10,0.0770546,13.8139
-batting,2026,chasing,middle,all balls,-0.521967,308,1.91545,6,10,0.165819,-2.43742
-batting,2026,chasing,death,pressure,68.1616,18,17.1614,4,10,0.323238,51.0002
-batting,2026,chasing,death,all balls,-29.9038,102,3.11665,10,10,0.510197,-33.0205
-batting,2026,chasing,all,pressure,29.6396,111,5.67739,2,10,0.152976,23.9622
-batting,2026,chasing,all,all balls,7.86917,626,4.44397,3,10,1.44912,3.42519
-batting,2026,all,powerplay,pressure,67.7673,89,7.3022,1,10,-0.188957,60.4651
-batting,2026,all,powerplay,all balls,30.9908,540,8.00976,1,10,1.45084,22.981
-batting,2026,all,middle,pressure,-9.4711,98,-0.439468,7,10,0.0477314,-9.03163
-batting,2026,all,middle,all balls,5.58268,795,4.19252,5,10,0.172171,1.39016
-batting,2026,all,death,pressure,16.1855,97,9.12086,4,10,-0.013808,7.0646
-batting,2026,all,death,all balls,-13.9339,374,-0.805447,9,10,0.271393,-13.1285
-batting,2026,all,all,pressure,23.4969,284,5.35913,3,10,-0.155033,18.1378
-batting,2026,all,all,all balls,9.33995,1709,4.28748,3,10,1.8944,5.05247
-bowling,2025,defending,powerplay,pressure,37.3008,14,-11.9815,1,10,0.0136733,49.2823
-bowling,2025,defending,powerplay,all balls,5.05186,144,-6.85407,4,10,-0.0399573,11.9059
-bowling,2025,defending,middle,pressure,-20.6305,18,-9.62237,6,10,0.0753747,-11.0082
-bowling,2025,defending,middle,all balls,-17.6413,216,-8.8311,7,10,-0.0697419,-8.81024
-bowling,2025,defending,death,pressure,34.0597,25,10.5338,4,10,0.549786,23.5259
-bowling,2025,defending,death,all balls,23.474,90,7.24523,4,10,0.422622,16.2288
-bowling,2025,defending,all,pressure,17.5852,57,-3.95295,1,10,0.638834,21.5381
-bowling,2025,defending,all,all balls,-2.15645,450,-5.05028,5,10,0.312922,2.89383
-bowling,2025,bowling first,powerplay,pressure,-20.4984,77,-7.25614,7,10,0.0801507,-13.2422
-bowling,2025,bowling first,powerplay,all balls,-13.6219,360,-12.1621,6,10,-0.222394,-1.45974
-bowling,2025,bowling first,middle,pressure,-44.2757,87,-5.20909,9,10,-0.554704,-39.0666
-bowling,2025,bowling first,middle,all balls,-15.2796,540,3.38511,10,10,-0.42025,-18.6647
-bowling,2025,bowling first,death,pressure,-14.7105,121,3.9651,7,10,0.466681,-18.6756
-bowling,2025,bowling first,death,all balls,-25.5974,300,-5.47592,10,10,-0.0710929,-20.1215
-bowling,2025,bowling first,all,pressure,-25.2994,285,-2.09807,9,10,-0.00787302,-23.2013
-bowling,2025,bowling first,all,all balls,-17.3617,1200,-3.47624,10,10,-0.713737,-13.8855
-bowling,2025,all,powerplay,pressure,-11.6062,91,-9.61386,7,10,0.093824,-1.99232
-bowling,2025,all,powerplay,all balls,-8.28652,504,-9.5081,5,10,-0.262351,1.22158
-bowling,2025,all,middle,pressure,-40.2223,105,-7.73999,10,10,-0.47933,-32.4823
-bowling,2025,all,middle,all balls,-15.9544,756,-2.66751,10,10,-0.489992,-13.2869
-bowling,2025,all,death,pressure,-6.35942,146,6.85303,8,10,1.01647,-13.2124
-bowling,2025,all,death,all balls,-14.2732,390,-0.0145598,10,10,0.351529,-14.2587
-bowling,2025,all,all,pressure,-18.152,342,-3.02995,9,10,0.630961,-15.122
-bowling,2025,all,all,all balls,-13.2148,1650,-4.23553,8,10,-0.400815,-8.9793
-bowling,2026,defending,powerplay,pressure,25.846,90,-6.63615,2,10,0.615667,32.4821
-bowling,2026,defending,powerplay,all balls,6.53723,324,-8.93615,3,10,-0.362497,15.4734
-bowling,2026,defending,middle,pressure,21.6217,101,0.490137,3,10,1.11522,21.1316
-bowling,2026,defending,middle,all balls,-14.5415,486,-2.11425,8,10,-0.223965,-12.4272
-bowling,2026,defending,death,pressure,-5.23139,98,-21.2014,6,10,-0.464944,15.97
-bowling,2026,defending,death,all balls,-0.343013,226,-2.214,6,10,-0.750943,1.87099
-bowling,2026,defending,all,pressure,13.8313,289,-8.14288,1,10,1.26594,21.9742
-bowling,2026,defending,all,all balls,-4.85196,1036,-4.36798,6,10,-1.33741,-0.483979
-bowling,2026,bowling first,powerplay,pressure,-135.785,32,-10.1267,9,10,-0.230203,-125.658
-bowling,2026,bowling first,powerplay,all balls,-18.654,216,-7.40364,4,10,-0.1821,-11.2503
-bowling,2026,bowling first,middle,pressure,-4.58727,18,-1.31703,4,10,-0.0983146,-3.27024
-bowling,2026,bowling first,middle,all balls,7.76241,324,-5.75035,3,10,0.0240488,13.5128
-bowling,2026,bowling first,death,pressure,-90.9669,39,1.84295,9,10,-0.128117,-92.8098
-bowling,2026,bowling first,death,all balls,-32.4964,178,5.49501,10,10,-0.313237,-37.9914
-bowling,2026,bowling first,all,pressure,-89.6113,89,-2.59713,10,10,-0.456635,-87.0142
-bowling,2026,bowling first,all,all balls,-10.1652,718,-3.47817,8,10,-0.471288,-6.68699
-bowling,2026,all,powerplay,pressure,-16.5491,122,-7.99644,7,10,0.385464,-8.55263
-bowling,2026,all,powerplay,all balls,-3.53925,540,-8.16989,3,10,-0.544597,4.63065
-bowling,2026,all,middle,pressure,17.6573,119,-0.261722,1,10,1.01691,17.919
-bowling,2026,all,middle,all balls,-5.61993,810,-3.95171,5,10,-0.199916,-1.66822
-bowling,2026,all,death,pressure,-29.6378,137,-8.59405,7,10,-0.593061,-21.0438
-bowling,2026,all,death,all balls,-14.5096,404,2.28059,9,10,-1.06418,-16.7902
-bowling,2026,all,all,pressure,-10.5242,378,-5.6422,7,10,0.80931,-4.88201
-bowling,2026,all,all,all balls,-7.02692,1754,-3.9046,5,10,-1.80869,-3.12231
+batting,2025,setting,powerplay,pressure,183.054,10,11.2257,1,10,0.122082,171.828
+batting,2025,setting,powerplay,all balls,32.92,144,12.7397,2,10,0.346367,20.1803
+batting,2025,setting,middle,pressure,1.01174,42,6.64166,6,10,-0.0313747,-5.62992
+batting,2025,setting,middle,all balls,-22.8953,216,-3.19844,9,10,-0.610914,-19.6969
+batting,2025,setting,death,pressure,-2.65966,65,-0.666107,6,10,-0.234023,-1.99355
+batting,2025,setting,death,all balls,-4.70016,120,4.62825,9,10,-0.191613,-9.32841
+batting,2025,setting,all,pressure,14.5312,117,5.03847,6,10,-0.143316,9.49275
+batting,2025,setting,all,all balls,-1.60194,480,3.54228,7,10,-0.45616,-5.14422
+batting,2025,chasing,powerplay,pressure,34.2032,53,14.6045,4,10,-0.38106,19.5987
+batting,2025,chasing,powerplay,all balls,27.1739,361,7.00828,2,10,0.926999,20.1656
+batting,2025,chasing,middle,pressure,19.8005,108,11.1087,6,10,0.472877,8.69188
+batting,2025,chasing,middle,all balls,0.716044,542,9.53833,9,10,-0.124022,-8.82229
+batting,2025,chasing,death,pressure,-23.4322,105,-12.1079,8,10,-3.14362,-11.3242
+batting,2025,chasing,death,all balls,-4.98618,233,-5.1875,6,10,-3.29445,0.201315
+batting,2025,chasing,all,pressure,5.6047,266,4.68399,6,10,-3.0518,0.920712
+batting,2025,chasing,all,all balls,7.95431,1136,5.83043,4,10,-2.49147,2.12387
+batting,2025,all,powerplay,pressure,57.8303,63,12.9241,1,10,-0.258978,44.9061
+batting,2025,all,powerplay,all balls,28.8124,505,9.87626,2,10,1.27337,18.9361
+batting,2025,all,middle,pressure,14.5397,150,9.22241,6,10,0.441502,5.31727
+batting,2025,all,middle,all balls,-6.01226,758,3.11222,8,10,-0.734936,-9.12448
+batting,2025,all,death,pressure,-15.4897,170,-5.78269,8,10,-3.37764,-9.70704
+batting,2025,all,death,all balls,-4.88895,353,0.411052,8,10,-3.48606,-5.3
+batting,2025,all,all,pressure,8.3316,383,4.85855,6,10,-3.19512,3.47305
+batting,2025,all,all,all balls,5.11582,1616,4.64585,7,10,-2.94763,0.469971
+batting,2026,setting,powerplay,pressure,95.5656,47,9.43152,2,10,0.0583598,86.1341
+batting,2026,setting,powerplay,all balls,24.5281,324,6.65327,2,10,0.677737,17.8748
+batting,2026,setting,middle,pressure,-31.9338,47,4.76772,8,10,-0.0293232,-36.7016
+batting,2026,setting,middle,all balls,7.93303,487,5.90228,5,10,0.00635145,2.03075
+batting,2026,setting,death,pressure,7.95854,79,1.02821,5,10,-0.337046,6.93032
+batting,2026,setting,death,all balls,-6.70701,272,-4.6972,4,10,-0.238804,-2.00981
+batting,2026,setting,all,pressure,20.9215,173,4.58406,3,10,-0.30801,16.3374
+batting,2026,setting,all,all balls,9.22085,1083,3.51358,4,10,0.445284,5.70727
+batting,2026,chasing,powerplay,pressure,41.4402,42,5.42202,3,10,-0.247317,36.0182
+batting,2026,chasing,powerplay,all balls,35.4363,216,8.10875,1,10,0.773099,27.3275
+batting,2026,chasing,middle,pressure,9.29026,51,-0.0649173,5,10,0.0770546,9.35517
+batting,2026,chasing,middle,all balls,-1.34159,308,2.55956,7,10,0.165819,-3.90115
+batting,2026,chasing,death,pressure,56.3934,18,16.8352,4,10,0.323238,39.5582
+batting,2026,chasing,death,all balls,-32.352,102,2.18392,10,10,0.510197,-34.536
+batting,2026,chasing,all,pressure,29.0934,111,6.6612,3,10,0.152976,22.4322
+batting,2026,chasing,all,all balls,6.29571,626,4.30306,4,10,1.44912,1.99265
+batting,2026,all,powerplay,pressure,70.0233,89,6.97629,1,10,-0.188957,63.047
+batting,2026,all,powerplay,all balls,28.8914,540,7.38073,1,10,1.45084,21.5106
+batting,2026,all,middle,pressure,-10.4805,98,1.92744,7,10,0.0477314,-12.4079
+batting,2026,all,middle,all balls,4.33984,795,4.24914,6,10,0.172171,0.0906986
+batting,2026,all,death,pressure,16.9464,97,8.22231,4,10,-0.013808,8.72413
+batting,2026,all,death,all balls,-13.7011,374,-1.82339,9,10,0.271393,-11.8777
+batting,2026,all,all,pressure,24.1155,284,5.72925,3,10,-0.155033,18.3862
+batting,2026,all,all,all balls,8.14939,1709,3.89192,4,10,1.8944,4.25746
+bowling,2025,defending,powerplay,pressure,37.232,14,-14.6966,1,10,0.0136733,51.9286
+bowling,2025,defending,powerplay,all balls,1.90651,144,-7.48441,4,10,-0.0399573,9.39091
+bowling,2025,defending,middle,pressure,-21.5965,18,-9.2567,7,10,0.0753747,-12.3398
+bowling,2025,defending,middle,all balls,-18.1046,216,-8.16759,7,10,-0.0697419,-9.93697
+bowling,2025,defending,death,pressure,27.9436,25,10.8086,4,10,0.549786,17.1351
+bowling,2025,defending,death,all balls,15.1548,90,6.276,5,10,0.422622,8.87879
+bowling,2025,defending,all,pressure,14.5807,57,-4.54657,1,10,0.638834,19.1273
+bowling,2025,defending,all,all balls,-5.04915,450,-5.1268,6,10,0.312922,0.0776494
+bowling,2025,bowling first,powerplay,pressure,-16.43,77,-7.94519,7,10,0.0801507,-8.48482
+bowling,2025,bowling first,powerplay,all balls,-12.2271,360,-13.137,6,10,-0.222394,0.909832
+bowling,2025,bowling first,middle,pressure,-45.9819,87,-7.66286,9,10,-0.554704,-38.319
+bowling,2025,bowling first,middle,all balls,-12.7069,540,3.22325,10,10,-0.42025,-15.9302
+bowling,2025,bowling first,death,pressure,-12.8488,121,2.77555,8,10,0.466681,-15.6243
+bowling,2025,bowling first,death,all balls,-25.2004,300,-5.85409,10,10,-0.0710929,-19.3463
+bowling,2025,bowling first,all,pressure,-23.9307,285,-3.49638,9,10,-0.00787302,-20.4343
+bowling,2025,bowling first,all,all balls,-15.6863,1200,-3.93718,9,10,-0.713737,-11.7492
+bowling,2025,all,powerplay,pressure,-8.17432,91,-11.3138,6,10,0.093824,3.13951
+bowling,2025,all,powerplay,all balls,-8.18896,504,-10.3107,4,10,-0.262351,2.12173
+bowling,2025,all,middle,pressure,-41.8015,105,-8.57688,10,10,-0.47933,-33.2246
+bowling,2025,all,middle,all balls,-14.2491,756,-2.42043,10,10,-0.489992,-11.8287
+bowling,2025,all,death,pressure,-5.86378,146,6.30724,8,10,1.01647,-12.171
+bowling,2025,all,death,all balls,-15.8876,390,-0.646477,10,10,0.351529,-15.2412
+bowling,2025,all,all,pressure,-17.5121,342,-4.02399,9,10,0.630961,-13.4881
+bowling,2025,all,all,all balls,-12.7853,1650,-4.51103,8,10,-0.400815,-8.27426
+bowling,2026,defending,powerplay,pressure,26.8206,90,-8.34335,2,10,0.615667,35.164
+bowling,2026,defending,powerplay,all balls,2.87112,324,-9.66588,4,10,-0.362497,12.537
+bowling,2026,defending,middle,pressure,14.2837,101,-2.05847,3,10,1.11522,16.3422
+bowling,2026,defending,middle,all balls,-16.9963,486,-2.69306,9,10,-0.223965,-14.3032
+bowling,2026,defending,death,pressure,-4.32546,98,-20.3988,4,10,-0.464944,16.0733
+bowling,2026,defending,death,all balls,-4.945,226,-1.78577,6,10,-0.750943,-3.15923
+bowling,2026,defending,all,pressure,11.8776,289,-9.45472,1,10,1.26594,21.3323
+bowling,2026,defending,all,all balls,-8.15399,1036,-4.80341,6,10,-1.33741,-3.35058
+bowling,2026,bowling first,powerplay,pressure,-132.264,32,-10.6279,9,10,-0.230203,-121.636
+bowling,2026,bowling first,powerplay,all balls,-14.5252,216,-6.89802,4,10,-0.1821,-7.62717
+bowling,2026,bowling first,middle,pressure,-2.01076,18,-1.74802,4,10,-0.0983146,-0.262734
+bowling,2026,bowling first,middle,all balls,9.28021,324,-4.76434,2,10,0.0240488,14.0446
+bowling,2026,bowling first,death,pressure,-77.0328,39,1.46019,9,10,-0.128117,-78.493
+bowling,2026,bowling first,death,all balls,-25.6438,178,5.76868,10,10,-0.313237,-31.4125
+bowling,2026,bowling first,all,pressure,-81.7183,89,-3.02898,10,10,-0.456635,-78.6893
+bowling,2026,bowling first,all,all balls,-6.53935,718,-2.81249,5,10,-0.471288,-3.72687
+bowling,2026,all,powerplay,pressure,-14.9065,122,-9.23364,5,10,0.385464,-5.67291
+bowling,2026,all,powerplay,all balls,-4.0874,540,-8.28195,4,10,-0.544597,4.19455
+bowling,2026,all,middle,pressure,11.819,119,-1.92931,2,10,1.01691,13.7483
+bowling,2026,all,middle,all balls,-6.4857,810,-3.73976,5,10,-0.199916,-2.74594
+bowling,2026,all,death,pressure,-25.0232,137,-8.43997,6,10,-0.593061,-16.5832
+bowling,2026,all,death,all balls,-14.0648,404,2.61871,10,10,-1.06418,-16.6835
+bowling,2026,all,all,pressure,-10.1596,378,-6.55724,7,10,0.80931,-3.60231
+bowling,2026,all,all,all balls,-7.49304,1754,-3.76662,6,10,-1.80869,-3.72642
