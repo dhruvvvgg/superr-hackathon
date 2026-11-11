@@ -1,0 +1,29 @@
+role,config,family,n_eligible,top10_overlap_with_primary,spearman_with_primary,n_common
+batter,A primary,primary,153,10,1,153
+batter,B contested-state rule,pressure definition,105,3,0.673521,96
+batter,C leverage pct >= 90,pressure definition,89,5,0.846084,89
+batter,D leverage pct >= 70,pressure definition,167,8,0.88632,153
+batter,"E death overs, WP 0.2-0.8",pressure definition,87,4,0.676704,79
+batter,F global leverage pct >= 80,pressure definition,143,8,0.80012,141
+batter,eligibility x0.5,eligibility,211,10,0.997762,153
+batter,eligibility x1.5,eligibility,116,9,0.999185,116
+batter,recency off,weights,153,8,0.920681,153
+batter,A-team and associates at full weight,weights,153,10,0.992374,153
+batter,A-team and associate opposition removed,data subset,145,10,0.990529,145
+batter,IPL only,data subset,79,5,0.850925,79
+batter,T20I only,data subset,89,5,0.84954,89
+batter,empirical Bayes estimator,estimator,153,5,0.845855,153
+bowler,A primary,primary,166,10,1,166
+bowler,B contested-state rule,pressure definition,133,7,0.76219,131
+bowler,C leverage pct >= 90,pressure definition,108,7,0.825145,108
+bowler,D leverage pct >= 70,pressure definition,182,8,0.905705,166
+bowler,"E death overs, WP 0.2-0.8",pressure definition,97,7,0.780589,96
+bowler,F global leverage pct >= 80,pressure definition,152,6,0.790045,149
+bowler,eligibility x0.5,eligibility,230,8,0.998783,166
+bowler,eligibility x1.5,eligibility,129,10,0.999625,129
+bowler,recency off,weights,166,9,0.947022,166
+bowler,A-team and associates at full weight,weights,166,9,0.993384,166
+bowler,A-team and associate opposition removed,data subset,159,9,0.99133,159
+bowler,IPL only,data subset,84,5,0.848314,84
+bowler,T20I only,data subset,98,6,0.868612,98
+bowler,empirical Bayes estimator,estimator,166,6,0.842273,166

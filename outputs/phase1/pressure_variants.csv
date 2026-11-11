@@ -1,0 +1,7 @@
+variant,share_of_deliveries,phi_with_A,jaccard_with_A,share_of_variant_inside_A,share_innings1,mean_leverage,definition
+A,0.200009,1,1,1,0.521089,1.99726,primary: leverage percentile >= 80 within innings number
+B,0.192815,0.263525,0.25634,0.415688,0.805596,1.34665,WP in 0.25-0.75 and (balls left <= 48 or wickets lost >= 5)
+C,0.100007,0.666674,0.500013,1,0.521076,2.47457,leverage percentile >= 90
+D,0.300006,0.763774,0.666684,0.666684,0.521085,1.75866,leverage percentile >= 70
+E,0.127752,0.275878,0.235099,0.48836,0.824001,1.50626,overs 16-20 and WP in 0.2-0.8
+F,0.200004,0.529927,0.45343,0.623953,0.145029,2.15593,"leverage percentile >= 80, global (both innings pooled)"
