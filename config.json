@@ -1,0 +1,49 @@
+{
+  "seed": 20261101,
+  "reference_date": "2026-11-01",
+  "illegal_extras": ["wide", "Overstep", "other"],
+  "noball_extras": ["Overstep", "other"],
+  "bowler_wickets": ["Caught", "Bowled", "LBW", "Stump", "Hit Wicket"],
+  "non_batter_cost_dismissals": ["Retire Out"],
+  "full_members": ["Afghanistan", "Australia", "Bangladesh", "England", "India", "Ireland",
+                   "New Zealand", "Pakistan", "South Africa", "Sri Lanka", "West Indies", "Zimbabwe"],
+  "a_team_comp_ids": [2670, 3289],
+  "rr_team_id": 3,
+  "ipl_comp_ids": {"2022": 1358, "2023": 1715, "2024": 2193, "2025": 2725, "2026": 3298},
+
+  "target_mode": "result_anchored",
+  "wp": {"n_folds": 5, "model": "lgbm_monotone"},
+  "leverage": {"percentile_scope": "innings_number"},
+  "pressure": {"primary_variant": "A", "high": 80, "extreme": 95, "normal": 50},
+
+  "weights": {
+    "recency_half_life_months": 24,
+    "use_recency": true,
+    "ipl": 1.0,
+    "t20i_full_member_opposition": 1.0,
+    "t20i_associate_opposition": 0.5,
+    "a_team": 0.5
+  },
+  "ridge": {
+    "lambda_main_grid": [100, 300, 1000, 3000, 10000],
+    "lambda_delta_grid": [300, 1000, 3000, 10000, 30000],
+    "lambda_nuisance_ratio": 1.0
+  },
+  "composite_weights": {"level": 0.40, "impact": 0.25, "consistency": 0.20, "delta": 0.15},
+  "eligibility": {
+    "bat_min_pressure_balls": 60,
+    "bat_min_pressure_innings": 12,
+    "bowl_min_pressure_balls": 48,
+    "bowl_min_pressure_spells": 10,
+    "min_total_balls": 150,
+    "recent_years": [2025, 2026],
+    "min_pool": 40
+  },
+  "robustness": {
+    "n_bootstrap": 1000,
+    "n_dirichlet": 200,
+    "dirichlet_concentration": 20,
+    "n_random_splits": 20,
+    "swap_threshold": 0.40
+  }
+}

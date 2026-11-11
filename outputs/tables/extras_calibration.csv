@@ -1,0 +1,20 @@
+item,fitted,simple,n
+run value: wide,1.077,1,7710
+run value: Overstep,1,1,576
+run value: other,1,1,263
+run value: legbyes,1.077,1,2747
+run value: byes,1.692,1,529
+run value: Penalty (fixed),5,5,1
+"margin MAE (runs), fitted",2.14161,,396
+"margin RMSE (runs), fitted",2.93949,,396
+"exact-margin rate, fitted",0.219697,,396
+"within 2 runs rate, fitted",0.573232,,396
+"margin MAE (runs), simple",2.16667,,396
+"margin RMSE (runs), simple",3.11886,,396
+"exact-margin rate, simple",0.318182,,396
+"within 2 runs rate, simple",0.583333,,396
+"margin MAE (runs), fitted, 5-fold out of sample",2.16799,,396
+"wicket-win chases: reconstructed total minus reconstructed target, mean",0.586634,,404
+wicket-win chases: share with reconstructed total below reconstructed target,0.420792,,404
+run-margin matches: |margin error| mean with fitted values,2.14161,,396
+"target adjustment |anchored - reconstructed|, mean (runs)",1.87363,,809

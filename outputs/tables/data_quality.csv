@@ -1,0 +1,61 @@
+stage,check,claimed,observed,status,note
+01_profile,ball rows,200999,200999,match,
+01_profile,ball columns,33,33,match,
+01_profile,matches listed,883,883,match,
+01_profile,matches with ball data,867,867,match,
+01_profile,matches without ball data,16,16,match,
+01_profile,...of which Match Abandoned,16,16,match,
+01_profile,IPL matches listed,371,371,match,
+01_profile,IPL matches with ball data,367,367,match,
+01_profile,IPL 2024 matches missing ball data,3,3,match,
+01_profile,latest match date,2026-11-01,2026-11-01,match,
+01_profile,balls T20I (inn 1-2),about 106300,106315,match,
+01_profile,balls IPL (inn 1-2),about 87700,87673,match,
+01_profile,balls A-team (inn 1-2),about 7000,6973,match,
+01_profile,super-over balls (innings 3-4),38,38,match,excluded from analysis
+01_profile,mean bat runs on extras_type=Overstep,,1.4792,info,n=576
+01_profile,mean bat runs on extras_type=Penalty,,0.0,info,n=1
+01_profile,mean bat runs on extras_type=byes,,0.0,info,n=529
+01_profile,mean bat runs on extras_type=legbyes,,0.0004,info,n=2748
+01_profile,mean bat runs on extras_type=none,,1.4182,info,n=189167
+01_profile,mean bat runs on extras_type=other,,1.5606,info,n=264
+01_profile,mean bat runs on extras_type=wide,,0.0,info,n=7714
+01_profile,extras1_runs is a type code,1=Overstep 2=wide 3=legbyes 4=byes 5=other 6=none 7=Penalty,1=Overstep 2=wide 3=legbyes 4=byes 5=other 6=none 7=Penalty,match,
+01_profile,rows with extras_2_runs > 0,36,36,match,"values [1, 4]"
+01_profile,"overs with >6 legal balls, other legal (handover rule)","1 if other is legal, 244 if excluded",244,DIFFERS,innings with >120 legal balls: 150; innings with exactly 120: 873
+01_profile,"overs with >6 legal balls, other illegal (adopted rule)","1 if other is legal, 244 if excluded",1,info,innings with >120 legal balls: 0; innings with exactly 120: 1011
+01_profile,max over_ball_num,13,13,match,
+01_profile,overid range,1-20,1-20,match,
+01_profile,is_wicket rows,10881,10881,match,
+01_profile,dismissal types,9 labels incl. two spellings of Obstructing,Caught=7557; Bowled=1775; LBW=709; RunOut=600; Stump=214; Hit Wicket=17; Retire Out=6; Obstracting the field=2; Obstructing the field=1,match,
+01_profile,dismissed == striker share,about 0.975,0.9747,match,
+01_profile,wicket rows with missing dismissed_player_id,1,1,match,
+01_profile,dismissals on wides,,"{'Stump': 25, 'RunOut': 15}",info,handled as dismissal-only records
+01_profile,matches with revised_target,23,23,match,
+01_profile,matches with a revised-overs field,not stated,34,info,
+01_profile,DLS in result text but no revised field,0,4,DIFFERS,also excluded as reduced
+01_profile,player ids,1217,1217,match,
+01_profile,ids with more than one name,0,0,match,
+01_profile,names mapping to two ids,7,7,match,"Abdul Samad, Bashir Ahmad, Basil Hameed, Haider Ali, Mohammad Ali, Muhammad Farooq, Rashid Khan"
+01_profile,Sanju Samson id,2258,2258,match,"teams: Chennai Super Kings, India, Rajasthan Royals"
+01_profile,ball-data player ids missing from mapping,0,0,match,
+01_profile,RR IPL 2026 squad rows (comp 3298 team 3),present,27,match,
+01_profile,batting_order empty when not played,True,True,match,
+01_profile,batters with >=200 balls faced,217,214,DIFFERS,
+01_profile,batters with >=500 balls faced,126,122,DIFFERS,
+01_profile,bowlers with >=200 balls bowled,232,226,DIFFERS,
+01_profile,bowlers with >=500 balls bowled,128,123,DIFFERS,
+01_profile,bowl_speed zero share,about 0.39,0.387,match,
+01_profile,stroke empty share,about 0.03,0.031,match,
+02_build_state,legal balls per completed over == 6 (share),>= 0.999,0.99987,pass,4 of 30626 non-final overs differ; overs >6: 1
+02_build_state,innings with more than 120 legal balls,0,0.0,pass,
+02_build_state,complete first innings in clean matches have 120 legal balls or are all out,1.0,1.0,pass,
+02_build_state,wicket check: wickets lost in chase == 10 - N for 'won by N wickets',1.0,0.99761,FAIL,418/419 matches
+02_build_state,"extras calibration MAE, fitted <= simple 1-run rule",2.1667,2.1416,pass,n=396 run-margin matches; out-of-sample MAE 2.168
+02_build_state,matches excluded: no ball data,,16.0,info,
+02_build_state,matches excluded: reduced (revised fields or DLS text),,38.0,info,
+02_build_state,"matches excluded: no winner (no result / abandoned) with balls, not reduced",,14.0,info,
+02_build_state,matches excluded: first innings incomplete without flag,,5.0,info,
+02_build_state,matches excluded: second innings unresolved or result inconsistent,,1.0,info,
+02_build_state,clean matches kept,,809.0,info,
+02_build_state,deliveries in clean matches (innings 1-2),,193336.0,info,of 200961 innings 1-2 deliveries
