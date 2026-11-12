@@ -2,7 +2,7 @@
 
 A reproducible pipeline that defines pressure in T20 cricket from win-probability leverage, measures how
 batters and bowlers perform under it relative to an identity-free baseline, and ranks the most reliable
-players. The recommended final answer is `docs/V2_FINDINGS.md` (outputs in `outputs/v2/`). `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
+players. The recommended final answer is `docs/V3_FINDINGS.md` (outputs in `outputs/v3/`). `docs/V2_FINDINGS.md` records the intermediate redesign. `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
 
 ## Run
 
@@ -18,7 +18,7 @@ python run_all.py
 python -m pytest -q tests
 ```
 
-`run_all.py` runs every stage from the raw CSVs in about 7 minutes on 4 cores (Python 3.13). It accepts a
+`run_all.py` runs every stage from the raw CSVs in about 40 minutes on 4 cores (Python 3.13). It accepts a
 first stage, for example `python run_all.py 07`, to resume. All seeds are fixed in `config.json` and two
 runs from scratch give byte-identical tables.
 
@@ -48,6 +48,11 @@ src/13_improve2.py          phase 3: focused candidates, paired comparisons, tem
 src/20_v2_search.py         V2: pick rating options by forward-in-time prediction (2-standard-error rule)
 src/21_v2_rate.py           V2: final ratings and bootstrap intervals (outputs/v2/)
 src/22_v2_report.py         V2: figures and docs/V2_FINDINGS.md
+src/31_v3_credit.py         V3: richer situational baseline for batters (own credit file)
+src/30_v3_experiments.py    V3: structural experiments on the held-out trials (all rounds)
+src/32_v3_rate.py           V3: final ratings and bootstrap intervals (outputs/v3/)
+src/33_v3_report.py         V3: final comparison, figures and docs/V3_FINDINGS.md
+src/v3_lib.py               V3 rating engine (separate wicket shrinkage, interaction terms)
 src/11_report.py            writes docs/FINDINGS.md from the output tables
 src/phase2_experiments.py   side-by-side model variants scored on model quality
 src/*_lib.py, common.py     shared code

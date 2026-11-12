@@ -287,3 +287,38 @@ def test_v2_adoption_rule_respected():
                 continue
             rows = log[(log.role == role) & (log.option == k)]
             assert (rows.z > 2).any(), f"{role}.{k} moved without evidence"
+
+
+# ---- v3 (final) ---------------------------------------------------------------------------------------
+V3 = os.path.join(ROOT, "outputs", "v3")
+
+
+@pytest.mark.parametrize("label", ["batters", "bowlers"])
+def test_v3_top10_lists(label):
+    mp = raw("competition_team_player_mapping")
+    t = pd.read_csv(os.path.join(V3, f"top10_{label}.csv"))
+    assert len(t) == 10 and t.player_id.is_unique and list(t.final_rank) == list(range(1, 11))
+    name_of = mp.drop_duplicates("player_id").set_index("player_id").player_name
+    assert (t.dropdown_name.values == name_of.loc[t.player_id].values).all()
+    full = pd.read_csv(os.path.join(V3, f"ratings_{label}.csv"))
+    assert full.player_id.is_unique and (full.n_press_balls >= 40).all() and (full.n_total_balls >= 150).all()
+    assert (t.rating.values[:-1] >= t.rating.values[1:]).all()
+    assert np.allclose(full.rating, full.runs_part + full.wicket_part, atol=1e-3)  # CSV keeps 6 significant figures
+    assert full.boot_rating_p10.notna().all() and (full.boot_rating_p10 <= full.boot_rating_p90).all()
+
+
+def test_v3_beats_v2_on_confirmation_trials():
+    fc = pd.read_csv(os.path.join(V3, "final_comparison.csv"))
+    for role in ("bat", "bowl"):
+        r = fc[(fc.role == role) & (fc.trials == "confirmation trials")].iloc[0]
+        assert r.gain > 0 and r.gain_z > 1.5
+
+
+def test_v3_changes_have_evidence():
+    st = pd.read_csv(os.path.join(V3, "structure.csv")).set_index(["role", "candidate"])
+    assert st.loc[("bat", "inter pace lam 3000"), "passes"]
+    assert st.loc[("bowl", "lam_wkt x10"), "passes"]
+    import json
+    ch = json.load(open(os.path.join(V3, "chosen_config.json")))
+    assert ch["bat"]["inter"] == "pace" and ch["bat"]["credit"] == "bat_credit_v3"
+    assert ch["bowl"]["lam_wkt"] == 10 * ch["bowl"]["lam"] and ch["bowl"]["credit"] == "bowl_credit"

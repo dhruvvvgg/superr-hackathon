@@ -114,7 +114,8 @@
     "swap_threshold": 0.4
   },
   "baseline": {
-    "role_aware": true
+    "role_aware": true,
+    "extra_feats": false
   },
   "composite": {
     "standardise": "zscore"

@@ -21,8 +21,11 @@ PHASE_CODE = {"powerplay": 0, "middle": 1, "death": 2}
 BASE_FEATS = ["innings", "phase_c", "balls_left", "wkts_before", "crr", "rrr", "rrr_gap", "venue_avg",
               "tier_c", "is_pace", "bowl_type_c", "bat_lhb"]
 ROLE_FEATS = ["bf_before", "batting_order"] if CFG.get("baseline", {}).get("role_aware") else []
-BAT_FEATS = BASE_FEATS + ["is_noball_i", "free_hit_i"] + ROLE_FEATS
-BOWL_FEATS = BASE_FEATS + ["free_hit_i"] + ROLE_FEATS
+# situational extras (identity-free): momentum, live win probability, ball in over, partnership, bowler workload
+_XF = ["runs_last12", "wkts_last12", "dot_streak", "wp_before", "ball_in_over", "partnership_balls", "bowler_balls_before"]
+_XS = CFG.get("baseline", {}).get("extra_feats")          # False, True / "both", "bat" or "bowl"
+BAT_FEATS = BASE_FEATS + ["is_noball_i", "free_hit_i"] + ROLE_FEATS + (_XF if _XS in (True, "both", "bat") else [])
+BOWL_FEATS = BASE_FEATS + ["free_hit_i"] + ROLE_FEATS + (_XF if _XS in (True, "both", "bowl") else [])
 
 PARAMS = dict(learning_rate=0.05, n_estimators=300, num_leaves=31, min_child_samples=300,
               subsample=0.8, subsample_freq=1, colsample_bytree=0.9, reg_lambda=5.0,
@@ -67,6 +70,11 @@ def main():
     # balls already faced by the striker in this innings (wides are not faced)
     nw = (~b.is_wide).astype(int)
     b["bf_before"] = nw.groupby([b.match_id, b.innings, b.striker_id]).cumsum() - nw
+    b["ball_in_over"] = b.legal_before % 6
+    wk_no = b.groupby(["match_id", "innings"]).is_wicket.cumsum() - b.is_wicket
+    lg = b.legal.astype(int)
+    b["partnership_balls"] = lg.groupby([b.match_id, b.innings, wk_no]).cumsum() - lg
+    b["bowler_balls_before"] = lg.groupby([b.match_id, b.innings, b.bowler_id]).cumsum() - lg
     bowler_w = set(CFG["bowler_wickets"])
     no_cost = set(CFG["non_batter_cost_dismissals"])
     b["wkt_cost"] = b.is_wicket & ~b.dismissal_type.isin(no_cost)          # counts against a batter

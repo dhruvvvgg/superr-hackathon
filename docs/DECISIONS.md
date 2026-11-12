@@ -455,3 +455,44 @@ remain available and are marked as superseded in `docs/FINDINGS.md`.
 **D-45 Known limits.** Baselines, win probability and pressure flags are fitted on all matches, so rolling
 trials still pass a little league-wide information backwards. It cannot favour a player. Rolling windows
 overlap in their training data.
+
+## K. V3: final model, from open-ended experiments on the V2 trials
+
+Instruction: use any method to reach the best possible model. Same yardstick and trials as V2 (25 tuning,
+22 confirmation). Adoption rule tightened: tuning paired z above 2 AND not worse on the confirmation trials.
+All results in `outputs/v3/`.
+
+**D-46 New engine.** `src/v3_lib.py` generalises the V2 ridge (verified identical to V2 at default settings,
+difference below 1e-13). New options: leverage floor and cap, separate penalty for the wicket part of NRAE,
+player-by-context interactions (pace or left-hander, death overs), separate opponent penalty, score
+re-weighting and WPA blending, and ensembles of configurations.
+
+**D-47 Round 1, structure (structure.csv).** Passed: bowlers, wicket part penalised 3x and 10x (10x best:
+tuning +0.022, confirmation +0.027); batters, pace interaction with penalty 3,000 (tuning +0.010, z 2.2,
+confirmation +0.006). Failed: every ensemble (all worse), leverage floors, opponent-penalty changes,
+death-overs and left-hander interactions, other leverage powers and half-lives.
+
+**D-48 Round 2, combinations (combine.csv).** Nothing passed on top of the round-1 winners. Near miss:
+batter leverage cap 3 (positive on both trial sets, tuning z 1.2 and 1.5 in two rounds), not adopted.
+
+**D-49 Round 3, score construction (score.csv, score_xfeat.csv).** Re-weighting the wicket part and blending
+WPA did not pass for either group.
+
+**D-50 Richer baseline.** Identity-free situational features added to the expected-runs and dismissal
+models (momentum, dot streak, live win probability, ball in over, partnership length, bowler workload).
+Accuracy gain is tiny (expected-runs RMSE down about 0.0015). In the trials it helps batters (tuning +0.0063
+z 3.3 on the V2 model, +0.0053 z 2.1 on top of the pace term; confirmation positive) and hurts bowlers on
+confirmation (-0.0032), so it is used for batters only, written to `bat_credit_v3.parquet` so earlier
+results stay reproducible.
+
+**D-51 Final configuration.** Batters: V2 settings + pace interaction (penalty 3,000) on the richer
+baseline. Bowlers: V2 settings + wicket-part penalty 30,000 (10x). Paired against V2 on identical trials:
+batters +0.015 tuning (z 3.4), +0.009 confirmation (z 2.0); bowlers +0.022 tuning (z 2.2), +0.027
+confirmation (z 2.9).
+
+**D-52 Bootstrap fix.** With the interaction term, a resample that dropped every match of a player divided
+0 by 0 and ranked him last. The share now defaults to 0 so he keeps the prior, as in V2.
+
+**D-53 Honest caveats.** About 30 variants were tried per group, so with a 2-SE rule one false positive is
+plausible; the batter changes are the weaker ones. The leakage caveat of D-45 still applies to the trials
+(not to the final model). V3 is the recommended submission; V2 and phase 3 remain as records.

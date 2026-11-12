@@ -1,5 +1,7 @@
 # V2: a fresh build of the pressure rating
 
+> **Superseded.** The final model is V3 (`docs/V3_FINDINGS.md`), which improves this design on the same held-out trials. This document is kept as the record of the V2 redesign.
+
 This is an independent second design, made from the six supplied CSVs and the problem statement only. The ball-level preparation (legal balls, extras, match state, out-of-fold win probability, expected runs and wickets) is reused from `docs/FINDINGS.md` because it is data engineering that was checked against scorecards and published figures. Everything about how players are rated was redesigned around one question: **which method best predicts a player's future performance when the match is on the line?** Every table is in `outputs/v2/`, produced by `src/20_v2_search.py`, `21_v2_rate.py` and `22_v2_report.py`.
 
 ## 1. Result

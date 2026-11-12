@@ -5,7 +5,8 @@ import sys
 import time
 
 STAGES = ["01_profile", "02_build_state", "03_win_prob", "04_pressure", "05_expected", "06_attribution",
-          "07_ratings", "08_robustness", "09_rr_fit", "10_audit", "12_improve", "13_improve2", "11_report", "20_v2_search", "21_v2_rate", "22_v2_report"]
+          "07_ratings", "08_robustness", "09_rr_fit", "10_audit", "12_improve", "13_improve2", "11_report", "20_v2_search", "21_v2_rate", "22_v2_report",
+          "31_v3_credit", "30_v3_experiments", "32_v3_rate", "33_v3_report"]
 
 
 def main():
@@ -13,7 +14,7 @@ def main():
     start = sys.argv[1] if len(sys.argv) > 1 else "01"
     env = dict(os.environ, PYTHONHASHSEED="0", PYTHONWARNINGS="ignore")
     t_all = time.time()
-    skip = [s for s in STAGES if s[:2] == start[:2]]
+    skip = [s for s in STAGES if s.startswith(start)] or [s for s in STAGES if s[:2] == start[:2]]
     first = STAGES.index(skip[0]) if skip else 0
     for s in STAGES[first:]:
         t0 = time.time()

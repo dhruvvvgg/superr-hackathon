@@ -1,0 +1,5 @@
+role,trials,v3,v2,gain,gain_se,gain_z,n_trials
+bat,tuning trials,0.05816,0.04340,0.01476,0.00434,3.39820,25
+bat,confirmation trials,0.07385,0.06512,0.00873,0.00428,2.04084,22
+bowl,tuning trials,0.16396,0.14169,0.02227,0.01035,2.15146,25
+bowl,confirmation trials,0.21558,0.18880,0.02678,0.00908,2.94977,22

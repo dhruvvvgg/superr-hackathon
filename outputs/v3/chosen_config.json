@@ -1,0 +1,23 @@
+{
+ "bat": {
+  "half_life": 24.0,
+  "alpha": 1.0,
+  "assoc_w": 0.5,
+  "lam": 3000.0,
+  "opp_adjust": true,
+  "inter": "pace",
+  "lam_inter": 3000.0,
+  "credit": "bat_credit_v3",
+  "evidence": "structure.csv: inter pace lam 3000; score_xfeat vs score (richer baseline)"
+ },
+ "bowl": {
+  "half_life": null,
+  "alpha": 1.0,
+  "assoc_w": 1.0,
+  "lam": 3000.0,
+  "opp_adjust": true,
+  "lam_wkt": 30000.0,
+  "credit": "bowl_credit",
+  "evidence": "structure.csv: lam_wkt x10"
+ }
+}
