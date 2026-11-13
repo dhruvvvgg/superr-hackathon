@@ -516,3 +516,10 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 **D-59 Playing-XI anomalies made auditable.** Stage 10 now exports the missing-striker ball-level aggregates and duplicate XI rows with match, player and team identifiers. The 83 missing striker-to-XI references and 40 duplicate XI rows are not silently removed or repaired; they remain source-data anomalies pending authoritative reconciliation. This avoids assuming that a missing XI entry proves the ball-by-ball player identity is wrong.
 
 **D-60 Acceptance tests integrated.** run_all.py runs pytest after all stages and fails the pipeline if the acceptance suite fails. The standalone pytest command remains available for targeted reruns.
+
+
+**D-61 Calibration audit and acceptance aligned.** The win-probability audit now reports the same predeclared diagnostic gate used by acceptance tests: maximum dense-bin gap no greater than 0.08 and no more than one bin outside its match-clustered 2-SD bootstrap band. Raw bin gaps and uncertainty remain visible. This is a tolerance for a useful ranking input, not a statement of perfect calibration.
+
+**D-62 Wicket expectation uses the validated simpler baseline.** The fold-calibrated LightGBM wicket classifier is retained as a diagnostic candidate. Player credit uses an innings-by-phase mean estimated from training matches only, because the prior out-of-fold classifier did not beat that identity-free reference on log loss. The baseline is cross-fitted by match and is therefore not contaminated by the scored fold.
+
+**D-63 Audit outputs distinguish source omissions from pipeline defects.** Missing striker-to-XI references are cross-checked against the competition roster and expected delivery team. Duplicate XI memberships are deduplicated only for membership validation, while the raw duplicate rows remain available for inspection. Striker/non-striker identity collisions and bowlers exceeding 24 legal balls are exported as row-level diagnostics. Raw source files remain unchanged; no source record is silently fabricated or deleted.

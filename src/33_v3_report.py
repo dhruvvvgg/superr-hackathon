@@ -44,6 +44,9 @@ def main():
     plt = setup_matplotlib()
     top = {k: R3(f"top10_{k}.csv") for k in ("batters", "bowlers")}
     fc = final_comparison()
+    expected_metrics = pd.read_csv(os.path.join(TABLES, "expected_model_metrics.csv"))
+    wp_metrics = pd.read_csv(os.path.join(TABLES, "wp_model_metrics.csv"))
+    wp_bins = pd.read_csv(os.path.join(TABLES, "wp_calibration_bins.csv"))
     fc.to_csv(os.path.join(V3, "final_comparison.csv"), index=False, float_format="%.5f")
     conf2 = pd.read_csv(os.path.join(V2, "confirm.csv"))
     st, cb, sc = R3("structure.csv"), R3("combine.csv"), R3("score.csv")
@@ -165,6 +168,18 @@ def main():
       "resource-value and expected-value fold is trained only on earlier dates. Venue averages and ridge "
       "penalty CV are also past-only. The temporal table below therefore evaluates a chronologically cross-fit "
       "pipeline after the warm-up period; it is still a diagnostic, not a separately reserved model-selection holdout.")
+    for role in ("batter", "bowler"):
+        xr = expected_metrics[expected_metrics.model == f"{role} xRuns"].iloc[0]
+        wk = expected_metrics[expected_metrics.model == f"{role} xWkt"].iloc[0]
+        wk_candidate = expected_metrics[expected_metrics.model == f"{role} xWkt candidate"].iloc[0]
+        A(f"- {role.capitalize()} expected runs: OOF RMSE {xr.oof:.3f} versus fold-local phase-mean {xr.phase_mean_baseline:.3f}. "
+          f"Expected wickets use the fold-local innings/phase mean (log loss {wk.oof:.4f}); the calibrated LightGBM candidate "
+          f"remains diagnostic only (log loss {wk_candidate.oof:.4f}) because the simpler baseline is the selected reference.")
+    wp_primary = wp_metrics[(wp_metrics.role == "primary") & (wp_metrics["sample"] == "all")].iloc[0]
+    outside = int((~wp_bins.gap_within_2sd).sum())
+    A(f"- Win-probability OOF log loss is {wp_primary.log_loss:.4f}; maximum dense-bin calibration gap is "
+      f"{wp_primary.max_calib_gap_dense_bins:.3f}, with {outside} of {len(wp_bins)} bins outside the match-bootstrap 2-SD band. "
+      "Calibration remains a reported diagnostic, not a claim of perfect calibration.")
     A("- No pitch, weather, dew, fielding or ball-tracking data; bye and leg-bye run values are not recorded.")
     A("- Availability for the auction is unknown until retention lists are published.\n")
     A("## 6. Forward-in-time validation\n")
