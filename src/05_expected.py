@@ -32,19 +32,44 @@ PARAMS = dict(learning_rate=0.05, n_estimators=300, num_leaves=31, min_child_sam
               random_state=SEED, n_jobs=4, deterministic=True, force_row_wise=True, verbose=-1)
 
 
-def oof(X, y, fold, objective, extra=None):
+def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
+    """Out-of-fold predictions; regression gets a match-held-out, fold-local bias correction.
+
+    The correction is estimated on a calibration subset of the training matches only. For
+    forward folds this is the latest 20% of available training matches; warm-up peer folds
+    use a deterministic grouped split. The final estimator is refit on the full training fold.
+    """
     pred = np.full(len(y), np.nan)
+    match_ids = np.asarray(match_ids) if match_ids is not None else None
+    dates = pd.to_datetime(match_dates).to_numpy() if match_dates is not None else None
     for k in sorted(np.unique(fold)):
         tr, te = train_mask_for_fold(fold, k), fold == k
         if not tr.any() or not te.any():
             raise ValueError(f"Empty expected-value train/test split for fold {k}")
         p = dict(PARAMS, objective=objective, **(extra or {}))
+        bias = 0.0
+        if objective == "regression" and match_ids is not None and match_dates is not None:
+            train_matches = np.unique(match_ids[tr])
+            if len(train_matches) >= 10:
+                if k >= 0:
+                    match_date = pd.DataFrame({"match_id": match_ids[tr], "date": dates[tr]}).drop_duplicates("match_id")
+                    ordered = match_date.sort_values(["date", "match_id"]).match_id.to_numpy()
+                    cal_matches = ordered[-max(1, int(np.ceil(0.20 * len(ordered)))):]
+                else:
+                    rng = np.random.RandomState(SEED + abs(int(k)))
+                    shuffled = rng.permutation(train_matches)
+                    cal_matches = shuffled[:max(1, int(np.ceil(0.20 * len(shuffled))))]
+                cal = tr & np.isin(match_ids, cal_matches)
+                fit = tr & ~cal
+                if fit.any() and cal.any():
+                    pilot = lgb.LGBMRegressor(**p).fit(X[fit], y[fit])
+                    bias = float(np.mean(y[cal] - pilot.predict(X[cal])))
         if objective == "binary":
             mdl = lgb.LGBMClassifier(**p).fit(X[tr], y[tr])
             pred[te] = mdl.predict_proba(X[te])[:, 1]
         else:
             mdl = lgb.LGBMRegressor(**p).fit(X[tr], y[tr])
-            pred[te] = mdl.predict(X[te])
+            pred[te] = mdl.predict(X[te]) + bias
     return pred
 
 
@@ -129,7 +154,7 @@ def main():
     bat = b[~b.is_wide].copy()
     print(f"  batter rows: {len(b)} deliveries -> {len(bat)} faced (wides removed: {int(b.is_wide.sum())})")
     Xb = bat[BAT_FEATS].values.astype(float)
-    bat["x_runs"] = oof(Xb, bat.runs.values.astype(float), bat.fold.values, "regression")
+    bat["x_runs"] = oof(Xb, bat.runs.values.astype(float), bat.fold.values, "regression", match_ids=bat.match_id.values, match_dates=bat.match_date.values)
     bat["x_wkt"] = oof(Xb, bat.striker_out.values.astype(int), bat.fold.values, "binary")
 
     # ---- bowler slots ----------------------------------------------------------------------------------
@@ -154,7 +179,7 @@ def main():
     assert len(bowl) == int(b.legal.sum()), (len(bowl), int(b.legal.sum()))
     print(f"  bowler slots: {len(bowl)} (= legal balls {int(b.legal.sum())})")
     Xw = bowl[BOWL_FEATS].values.astype(float)
-    bowl["x_runs"] = oof(Xw, bowl.bowler_runs.values.astype(float), bowl.fold.values, "regression")
+    bowl["x_runs"] = oof(Xw, bowl.bowler_runs.values.astype(float), bowl.fold.values, "regression", match_ids=bowl.match_id.values, match_dates=bowl.match_date.values)
     bowl["x_wkt"] = oof(Xw, (bowl.bowler_wkt.values > 0).astype(int), bowl.fold.values, "binary")
 
     # ---- metrics ---------------------------------------------------------------------------------------
