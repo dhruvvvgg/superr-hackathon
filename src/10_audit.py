@@ -65,6 +65,7 @@ def main():
         ("striker absent from playing_eleven (info only)", int(pd.isna(s_team).sum()), None),
         ("duplicate rows in playing_eleven (info only)", int(pe.duplicated(["match_id", "team_id", "player_id"]).sum()), None),
         ("striker equals non-striker (info only)", int((b.striker_id == b.non_striker_id).sum()), None),
+        ("striker equals non-striker in clean matches", int(((b.striker_id == b.non_striker_id) & b.clean).sum()), 0),
         ("duplicate faced-ball records in batter credit", int(bat[bat.faced == 1].duplicated(key).sum()), 0),
         ("duplicate slots in bowler credit", int(bowl.duplicated(["match_id", "innings", "slot"] if "slot" in bowl else key).sum()), 0),
         ("wides counted as balls faced", int(bat[bat.faced == 1].merge(clean[clean.is_wide][key], on=key).shape[0]), 0),
@@ -118,8 +119,9 @@ def main():
     # Detail the two remaining source-level edge cases so they can be inspected, not merely counted.
     same_ids = b[b.striker_id == b.non_striker_id].copy()
     if len(same_ids):
-        same_ids = same_ids[["match_id", "match_date", "innings", "innings_ball_num",
-                             "striker_id", "non_striker_id", "batting_team_id"]]
+        same_ids = same_ids[["match_id", "match_date", "comp_id", "clean", "innings", "innings_ball_num",
+                             "striker_id", "non_striker_id", "batting_team_id", "bowling_team_id",
+                             "extras_type", "is_wicket", "dismissal_type"]]
         same_ids = same_ids.merge(player_map, left_on="striker_id", right_on="player_id",
                                   how="left", validate="m:1").drop(columns="player_id")
     save_table(same_ids, "striker_non_striker_identity_collisions.csv")
