@@ -78,17 +78,30 @@ def main():
     ]
     it = pd.DataFrame(chk, columns=["check", "observed", "expected"])
     it["status"] = np.where(it.expected.isna(), "info", np.where(it.observed == it.expected, "pass", "FAIL"))
-    save_table(it, "audit_integrity.csv")
 
     # Drill down the informational XI anomalies so they can be reconciled against source records.
     missing = clean.loc[pd.isna(s_team), ["match_id", "match_date", "comp_id", "striker_id", "batting_team_id"]].copy()
     missing = missing.rename(columns={"striker_id": "player_id", "batting_team_id": "expected_team_id"})
     missing = missing.groupby(["match_id", "match_date", "comp_id", "player_id", "expected_team_id"]).size() \
         .rename("missing_striker_balls").reset_index()
-    player_map = raw("competition_team_player_mapping").drop_duplicates("player_id")[["player_id", "player_name"]]
+    mapping = raw("competition_team_player_mapping")
+    player_map = mapping.drop_duplicates("player_id")[["player_id", "player_name"]]
     missing = missing.merge(player_map, on="player_id", how="left", validate="m:1")
+    roster_teams = (mapping.groupby(["comp_id", "player_id"]).team_id
+                    .agg(lambda s: tuple(sorted(set(int(x) for x in s.dropna())))).rename("mapping_team_ids")
+                    .reset_index())
+    missing = missing.merge(roster_teams, on=["comp_id", "player_id"], how="left", validate="m:1")
+    missing["mapping_team_ids"] = missing.mapping_team_ids.apply(lambda x: x if isinstance(x, tuple) else tuple())
+    missing["mapping_team_agrees"] = missing.apply(
+        lambda r: int(r.expected_team_id) in r.mapping_team_ids, axis=1)
+    missing["resolution"] = np.where(missing.mapping_team_agrees,
+        "raw playing_eleven omission; player and team corroborated by competition roster",
+        "unresolved: competition roster does not corroborate delivery team")
     missing["expected_team_name"] = missing.expected_team_id.map(teams)
     save_table(missing, "playing_eleven_missing_strikers.csv")
+    unresolved_missing = int((~missing.mapping_team_agrees).sum())
+    it.loc[len(it)] = ["missing XI striker references unresolved by competition roster",
+                       unresolved_missing, 0, "pass" if unresolved_missing == 0 else "FAIL"]
 
     dup = pe[pe.duplicated(["match_id", "team_id", "player_id"], keep=False)].copy()
     if len(dup):
@@ -97,7 +110,31 @@ def main():
         dup = dup.merge(player_map, on="player_id", how="left", validate="m:1")
         dup["team_name"] = dup.team_id.map(teams)
     save_table(dup, "playing_eleven_duplicates.csv")
+    cross_team_dup_groups = (dup[dup.team_assignments_for_player > 1]
+                             .groupby(["match_id", "player_id"]).ngroups if len(dup) else 0)
+    it.loc[len(it)] = ["duplicate XI memberships assigned to multiple teams",
+                       int(cross_team_dup_groups), 0,
+                       "pass" if cross_team_dup_groups == 0 else "FAIL"]
+
+    # Detail the two remaining source-level edge cases so they can be inspected, not merely counted.
+    same_ids = b[b.striker_id == b.non_striker_id].copy()
+    if len(same_ids):
+        same_ids = same_ids[["match_id", "match_date", "innings", "innings_ball_num",
+                             "striker_id", "non_striker_id", "batting_team_id"]]
+        same_ids = same_ids.merge(player_map, left_on="striker_id", right_on="player_id",
+                                  how="left", validate="m:1").drop(columns="player_id")
+    save_table(same_ids, "striker_non_striker_identity_collisions.csv")
+
+    over_limit = (bowl.groupby(["match_id", "innings", "player_id"])
+                  .agg(legal_balls=("player_id", "size"), match_date=("match_date", "first"),
+                       comp_id=("comp_id", "first"), team_id=("team_id", "first"),
+                       overs=("over", lambda s: tuple(sorted(set(int(x) for x in s.dropna()))))
+                  .reset_index())
+    over_limit = over_limit[over_limit.legal_balls > 24].merge(
+        player_map, on="player_id", how="left", validate="m:1")
+    save_table(over_limit, "bowler_over_limit.csv")
     print(it.to_string())
+    save_table(it, "audit_integrity.csv")
     assert not (it.status == "FAIL").any()
 
 
