@@ -73,6 +73,8 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             fold=int(k), kind="warmup_crossfit" if k < 0 else "forward_temporal",
             train_matches=int(len(train_matches)), calibration_matches=int(len(cal_matches)),
             test_matches=int(np.unique(match_ids[te]).size),
+            calibration_matches_outside_train=int(len(set(cal_matches) - set(train_matches))),
+            calibration_matches_in_test=int(len(set(cal_matches) & set(np.unique(match_ids[te])))),
             train_max_date=pd.Timestamp(train_dates.max()).date().isoformat(),
             calibration_max_date=pd.Timestamp(cal_dates.max()).date().isoformat(),
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
@@ -131,6 +133,7 @@ def main():
             te = (fold == k) & (b.innings.values == inn)
             base[te] = y[tr].mean()
     preds["base_rate"] = base
+    save_table(pd.DataFrame(calibration_audit), "wp_calibration_fold_audit.csv")
 
     rows = []
     inn = b.innings.values
