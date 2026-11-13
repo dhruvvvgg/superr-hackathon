@@ -2,6 +2,8 @@
 
 This is the recommended candidate model. It extends V2 with a batter pace interaction and stronger shrinkage of the bowler wicket component. Candidate adoption is based on tuning trials only (paired z > 2). The legacy confirmation trials are descriptive diagnostics, not an untouched holdout: earlier V3 iterations used them for candidate gating. All tables are in outputs/v3/.
 
+**Rebuild required:** the numeric tables below are the previously committed V3 outputs, not results from the revised chronological pipeline on this branch. Run `python run_all.py` to regenerate the model-selection tables, temporal validation, V3 ratings, RR fit, anomaly audits and acceptance tests. Re-check the tuning-only evidence before treating the existing chosen configuration as confirmed under the revised upstream folds.
+
 ## 1. Result
 
 Rating: leverage-weighted, opponent-adjusted NRAE per 100 balls, shrunk toward average for small samples. It estimates overall performance on high-leverage deliveries relative to an identity-free expected-value baseline. It is not a causal estimate of within-player pressure uplift and it is not a consistency score. Raw pressure-versus-normal strike-rate/economy contrasts and pressure-innings dispersion are descriptive diagnostics, not ranking inputs. The interval is the 80% interval over 1,000 match resamples.
