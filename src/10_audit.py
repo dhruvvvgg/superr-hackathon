@@ -110,8 +110,7 @@ def main():
         dup = dup.merge(player_map, on="player_id", how="left", validate="m:1")
         dup["team_name"] = dup.team_id.map(teams)
     save_table(dup, "playing_eleven_duplicates.csv")
-    cross_team_dup_groups = (dup[dup.team_assignments_for_player > 1]
-                             .groupby(["match_id", "player_id"]).ngroups if len(dup) else 0)
+    cross_team_dup_groups = int((pe.groupby(["match_id", "player_id"]).team_id.nunique() > 1).sum())
     it.loc[len(it)] = ["duplicate XI memberships assigned to multiple teams",
                        int(cross_team_dup_groups), 0,
                        "pass" if cross_team_dup_groups == 0 else "FAIL"]
