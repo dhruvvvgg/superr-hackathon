@@ -1,0 +1,58 @@
+name: Review branch full pipeline
+
+on:
+  push:
+    branches:
+      - review-fixes-2026-11-13
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-fixes-full-pipeline
+  cancel-in-progress: false
+
+jobs:
+  full-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: review-fixes-2026-11-13
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgomp1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run full pipeline and acceptance tests
+        run: |
+          set -o pipefail
+          python -u run_all.py 2>&1 | tee pipeline.log
+
+      - name: Upload pipeline outputs and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-fixes-pipeline-${{ github.run_number }}
+          path: |
+            pipeline.log
+            outputs/
+            data/interim/
+            data/processed/
+          if-no-files-found: warn
+          retention-days: 14
