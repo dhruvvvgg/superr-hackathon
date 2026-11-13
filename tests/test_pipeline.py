@@ -362,7 +362,9 @@ def test_v3_changes_have_evidence():
 # ---- remediation audits ---------------------------------------------------------------------------
 def test_data_quality_has_no_unresolved_failures():
     quality = T("data_quality.csv")
-    assert not quality.status.eq("FAIL").any()
+    assert not quality.status.isin(["FAIL", "DIFFERS"]).any()
+    integrity = T("audit_integrity.csv")
+    assert not integrity.status.eq("FAIL").any()
 
 
 def test_target_reconstruction_provenance_is_exported():
