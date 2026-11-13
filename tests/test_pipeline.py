@@ -126,9 +126,14 @@ def test_no_match_scored_by_a_model_that_saw_it():
     audit = pd.DataFrame(pk["calibration_audit"])
     assert len(audit) == len(pk["fold_values"])
     assert (audit.calibration_matches <= audit.train_matches).all()
+    assert (audit.calibration_matches_outside_train == 0).all()
+    assert (audit.calibration_matches_in_test == 0).all()
     forward_audit = audit[audit.fold >= 0]
     assert (forward_audit.future_calibration_matches == 0).all()
     assert audit.calibrated_innings.eq("1;2").all()
+    exported = T("wp_calibration_fold_audit.csv")
+    assert len(exported) == len(audit)
+    assert (exported.calibration_matches_in_test == 0).all()
 
 
 def test_wpa_sums_to_result(balls):
