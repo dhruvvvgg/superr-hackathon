@@ -496,3 +496,20 @@ confirmation (z 2.9).
 **D-53 Honest caveats.** About 30 variants were tried per group, so with a 2-SE rule one false positive is
 plausible; the batter changes are the weaker ones. The leakage caveat of D-45 still applies to the trials
 (not to the final model). V3 is the recommended submission; V2 and phase 3 remain as records.
+
+
+## L. Review remediation (2026-11-13)
+
+**D-54 V3 selection rule corrected.** Candidate adoption now uses tuning trials only (paired z > 2). The legacy 22 confirmation trials remain in the comparison tables as diagnostics, but are explicitly not an untouched holdout because prior V3 iterations used confirmation performance to gate candidates. No new untouched holdout can be manufactured from the already-used historical observations; a genuinely independent confirmation requires future matches or a newly collected dataset.
+
+**D-55 RR fit rebuilt from V3.** The V3 pipeline now writes a separate RR fit under outputs/v3/rr_fit/, reading V3 batter and bowler ratings, V3 batter credit, and the existing bowler credit. The earlier phase-1 RR fit remains preserved for comparison. V3 schema differences (no grid-top-10 frequency and no separate final-rank column in the full ratings table) fall back to bootstrap top-10 probability and model rank.
+
+**D-56 Objective stated precisely.** The V3 rating is leverage-weighted, opponent-adjusted NRAE per 100 balls with shrinkage. It estimates overall high-leverage performance relative to the identity-free baseline; it is not a causal within-player pressure uplift and does not optimise consistency. Raw pressure-minus-normal strike-rate/economy contrasts and pressure-innings NRAE dispersion are exposed as descriptive diagnostics, not ranking inputs. The prior tests of consistency and delta components remain documented in D-31 to D-35.
+
+**D-57 Result-anchored target provenance made inspectable.** Stage 02 now exports per-match reconstructed and result-anchored targets, target source, and adjustment magnitude, plus a grouped audit table. The target remains the official match target reconstructed from the result where necessary; this is a reconstruction choice, not a model feature derived from the outcome at prediction time. Sensitivity must be interpreted alongside the existing anchored-versus-reconstructed WP and persistence comparison. Wicket-win target bounds remain an approximation when the exact target is not in the supplied data.
+
+**D-58 Forward-only rating checks added, upstream caveat retained.** The temporal validation stage fits ratings only on matches before each cutoff and evaluates on the following six/seven months. This is forward-only at the rating-fit layer. It does not make the entire pipeline temporally clean because current WP and expected-value features are still produced by grouped random-fold OOF models. The new table is diagnostic and is not used to select the model. A full end-to-end temporal rebuild of WP and expected-value models remains a separate, data-intensive validation exercise; do not claim it is complete.
+
+**D-59 Playing-XI anomalies made auditable.** Stage 10 now exports the missing-striker ball-level aggregates and duplicate XI rows with match, player and team identifiers. The 83 missing striker-to-XI references and 40 duplicate XI rows are not silently removed or repaired; they remain source-data anomalies pending authoritative reconciliation. This avoids assuming that a missing XI entry proves the ball-by-ball player identity is wrong.
+
+**D-60 Acceptance tests integrated.** run_all.py runs pytest after all stages and fails the pipeline if the acceptance suite fails. The standalone pytest command remains available for targeted reruns.

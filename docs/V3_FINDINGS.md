@@ -1,10 +1,10 @@
 # Final model (V3): who delivers under pressure
 
-This is the recommended final answer. It is V2 (`docs/V2_FINDINGS.md`) improved by a further round of experiments in which every change had to predict later pressure performance better, on the same held-out trials, by more than two standard errors, and could not be worse on 22 confirmation trials that played no part in choosing. All tables are in `outputs/v3/`.
+This is the recommended candidate model. It extends V2 with a batter pace interaction and stronger shrinkage of the bowler wicket component. Candidate adoption is based on tuning trials only (paired z > 2). The legacy confirmation trials are descriptive diagnostics, not an untouched holdout: earlier V3 iterations used them for candidate gating. All tables are in outputs/v3/.
 
 ## 1. Result
 
-Rating: runs per 100 balls above an average player in the same situation, weighting every ball by how much it could move the match, adjusted for opponents and shrunk toward average for small samples. For batters the dismissal cost is included in runs. The interval is the 80% interval over 1,000 resamples of matches.
+Rating: leverage-weighted, opponent-adjusted NRAE per 100 balls, shrunk toward average for small samples. It estimates overall performance on high-leverage deliveries relative to an identity-free expected-value baseline. It is not a causal estimate of within-player pressure uplift and it is not a consistency score. Raw pressure-versus-normal strike-rate/economy contrasts and pressure-innings dispersion are descriptive diagnostics, not ranking inputs. The interval is the 80% interval over 1,000 match resamples.
 
 ### Top 10 batters (`outputs/v3/top10_batters.csv`)
 
@@ -86,7 +86,7 @@ Chosen configuration (`outputs/v3/chosen_config.json`):
 | bat | 24.00 | 1.00 | 0.50 | 3000.00 | yes | pace | 3000.00 | bat_credit_v3 |  |
 | bowl |  | 1.00 | 1.00 | 3000.00 | yes |  |  | bowl_credit | 30000.00 |
 
-### Every variant tried (paired difference against the current base; adopted only if tune_z > 2 and conf_diff >= 0)
+### Every variant tried (paired difference against the current base; adoption uses tuning z > 2 only)
 
 **Round 1, structure** (`structure.csv`, base = V2):
 
@@ -242,9 +242,9 @@ Chosen configuration (`outputs/v3/chosen_config.json`):
 ## 5. Limits, stated plainly
 
 - Prediction is modest: held-out correlation about 0.07 for batters and 0.22 for bowlers. Batting under pressure is much less predictable than bowling under pressure in this data.
-- The two batter changes are small and each only just passes the rule; with about 30 variants tried per group, one of them could be a false positive. The bowler change is large and confirmed.
+- The batter interaction is a modest tuning-set result and is vulnerable to multiple-comparison optimism after about 30 variants. The bowler shrinkage change has a larger tuning-set gain. Legacy confirmation numbers are not independent evidence because they were used in earlier V3 gating.
 - Ranks 6 to 10 of the batters overlap heavily with ranks 11 to 20 (see the rank intervals).
-- Win probability, baselines and pressure flags were fitted on all matches. They know nothing about players, but strictly they pass a little league-wide information backwards in time inside the rolling trials.
+- Win probability, expected-value baselines and pressure flags use grouped random-fold out-of-fold predictions, not forward-only predictions. The temporal rating checks are forward-only at the rating-fit layer, but are not an end-to-end leakage-free validation.
 - No pitch, weather, dew, fielding or ball-tracking data; bye and leg-bye run values are not recorded.
 - Availability for the auction is unknown until retention lists are published.
 
@@ -283,3 +283,18 @@ Stages 31 (richer batter baseline), 30 (all experiment rounds, about 20 minutes)
 8. Axar Patel (2876)
 9. Mohsin Khan (6669)
 10. Matheesha Pathirana (8661)
+
+
+## 6. Forward-in-time rating-only validation
+
+See outputs/v3/temporal_validation.csv. Each row fits V3 on matches before a cutoff and evaluates the same players on the following six/seven months. This is a forward-only check of the rating fit on the existing credit tables. It does not remove upstream temporal leakage: the credit residuals still inherit win-probability and expected-value predictions produced by grouped random folds. It must not be described as a clean end-to-end holdout.
+
+The final RR fit is regenerated from V3 ratings and V3 batter credit in outputs/v3/rr_fit/. The earlier phase-1 fit remains in outputs/tables/ for comparison.
+
+## 7. Scope of the pressure objective
+
+The ranked quantity is overall leverage-weighted NRAE, not the difference between a player's pressure performance and their own normal performance. The latter is shown separately as a raw descriptive contrast in the ratings files (raw_pressure_uplift); it is not context-adjusted and is not used to rank players. Consistency is likewise not part of the V3 score. Pressure-innings dispersion (press_innings_nrae_mad) is available as a descriptive stability diagnostic, but is sample-size sensitive.
+
+## 8. Reproduction and caveats
+
+The full pipeline now runs the acceptance suite automatically after all stages. The 83 missing striker-to-playing-XI references and 40 duplicate playing-XI rows are exported to outputs/tables/playing_eleven_missing_strikers.csv and playing_eleven_duplicates.csv; they remain documented source anomalies rather than silently corrected records.
