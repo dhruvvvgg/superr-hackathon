@@ -79,6 +79,24 @@ def main():
     it = pd.DataFrame(chk, columns=["check", "observed", "expected"])
     it["status"] = np.where(it.expected.isna(), "info", np.where(it.observed == it.expected, "pass", "FAIL"))
     save_table(it, "audit_integrity.csv")
+
+    # Drill down the informational XI anomalies so they can be reconciled against source records.
+    missing = clean.loc[pd.isna(s_team), ["match_id", "match_date", "comp_id", "striker_id", "batting_team_id"]].copy()
+    missing = missing.rename(columns={"striker_id": "player_id", "batting_team_id": "expected_team_id"})
+    missing = missing.groupby(["match_id", "match_date", "comp_id", "player_id", "expected_team_id"]).size() \
+        .rename("missing_striker_balls").reset_index()
+    player_map = raw("competition_team_player_mapping").drop_duplicates("player_id")[["player_id", "player_name"]]
+    missing = missing.merge(player_map, on="player_id", how="left", validate="m:1")
+    missing["expected_team_name"] = missing.expected_team_id.map(teams)
+    save_table(missing, "playing_eleven_missing_strikers.csv")
+
+    dup = pe[pe.duplicated(["match_id", "team_id", "player_id"], keep=False)].copy()
+    if len(dup):
+        dup["duplicate_group_rows"] = dup.groupby(["match_id", "team_id", "player_id"]).player_id.transform("size")
+        dup["team_assignments_for_player"] = dup.groupby(["match_id", "player_id"]).team_id.transform("nunique")
+        dup = dup.merge(player_map, on="player_id", how="left", validate="m:1")
+        dup["team_name"] = dup.team_id.map(teams)
+    save_table(dup, "playing_eleven_duplicates.csv")
     print(it.to_string())
     assert not (it.status == "FAIL").any()
 

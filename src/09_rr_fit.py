@@ -28,13 +28,18 @@ def bowl_role(pace, death_share, pp_share):
     return "pace, death-leaning" if death_share >= 0.30 else ("pace, powerplay-leaning" if pp_share >= 0.45 else "pace, all phases")
 
 
-def main():
-    print("Stage 09: RR fit")
+def main(rating_dir=None, out_dir=None, bat_credit_name="bat_credit", bowl_credit_name="bowl_credit",
+         figure_path=None, label="Stage 09"):
+    rating_dir = rating_dir or TABLES
+    out_dir = out_dir or TABLES
+    figure_path = figure_path or os.path.join(FIGURES, "rr_gap.png")
+    os.makedirs(out_dir, exist_ok=True)
+    print(f"{label}: RR fit")
     names = player_names()
-    bat = pd.read_parquet(os.path.join(PROCESSED, "bat_credit.parquet"))
-    bowl = pd.read_parquet(os.path.join(PROCESSED, "bowl_credit.parquet"))
-    rat = {"batter": pd.read_csv(os.path.join(TABLES, "batter_ratings.csv")),
-           "bowler": pd.read_csv(os.path.join(TABLES, "bowler_ratings.csv"))}
+    bat = pd.read_parquet(os.path.join(PROCESSED, f"{bat_credit_name}.parquet"))
+    bowl = pd.read_parquet(os.path.join(PROCESSED, f"{bowl_credit_name}.parquet"))
+    rat = {"batter": pd.read_csv(os.path.join(rating_dir, "ratings_batters.csv" if rating_dir.endswith("v3") else "batter_ratings.csv")),
+           "bowler": pd.read_csv(os.path.join(rating_dir, "ratings_bowlers.csv" if rating_dir.endswith("v3") else "bowler_ratings.csv"))}
     mp = raw("competition_team_player_mapping")
     pe = raw("playing_eleven")
     m = raw("matches")
@@ -61,7 +66,7 @@ def main():
                                          n_teams=len(team), rr_wpa_total=team.loc[RR, "wpa"]))
     prof = pd.DataFrame(rows)
     prof["rr_minus_league"] = prof.rr_nrae_per100 - prof.league_mean_nrae_per100
-    save_table(prof, "rr_team_profile.csv")
+    prof.to_csv(os.path.join(out_dir, "rr_team_profile.csv"), index=False, float_format="%.6g")
     key = prof[(prof["sample"] == "pressure") & (prof.situation == "all") & (prof.phase != "all")]
     print(key[["discipline", "year", "phase", "rr_nrae_per100", "rr_balls", "rr_rank_of_teams", "rr_minus_league"]].round(1).to_string())
     gaps = key[key.year == 2026].sort_values("rr_minus_league")
@@ -124,7 +129,7 @@ def main():
         inc.append(row)
     inc = pd.DataFrame(inc).sort_values("ipl2026_matches", ascending=False)
     inc["regular"] = inc.ipl2026_matches >= 7
-    save_table(inc, "rr_incumbents.csv")
+    inc.to_csv(os.path.join(out_dir, "rr_incumbents.csv"), index=False, float_format="%.6g")
 
     # ---- 2-4. fit table for the top 20 of each group ------------------------------------------------------------------
     out = []
@@ -132,9 +137,9 @@ def main():
         rt = rat[label]
         for r in rt[rt["rank"] <= 20].itertuples():
             pr_, g, p = prof_fn(r.player_id)
-            row = dict(group=label, rank=r.rank, final_rank=r.final_rank, player_id=r.player_id, player_name=r.player_name,
+            row = dict(group=label, rank=r.rank, final_rank=getattr(r, "final_rank", r.rank), player_id=r.player_id, player_name=r.player_name,
                        rating=r.rating, boot_rating_p10=r.boot_rating_p10, boot_rating_p90=r.boot_rating_p90,
-                       boot_top10_prob=r.boot_top10_prob, grid_top10_prob=r.grid_top10_prob,
+                       boot_top10_prob=r.boot_top10_prob, grid_top10_prob=getattr(r, "grid_top10_prob", r.boot_top10_prob),
                        ipl_2026_team=r.ipl_2026_team if isinstance(r.ipl_2026_team, str) else "not in an IPL 2026 squad",
                        national_team=r.national_team if isinstance(r.national_team, str) else "none in data (uncapped)")
             row["overseas_derived"] = row["national_team"] not in ("India", "none in data (uncapped)")
@@ -171,7 +176,7 @@ def main():
             row["auction_shortlist"] = bool((not row["already_rr"]) and row["fills_rr_gap_cell"] and r.boot_top10_prob >= 0.10)
             out.append(row)
     fit = pd.DataFrame(out)
-    save_table(fit, "rr_fit.csv")
+    fit.to_csv(os.path.join(out_dir, "rr_fit.csv"), index=False, float_format="%.6g")
     print(fit[["group", "rank", "player_name", "role", "main_phase", "ipl_2026_team", "overseas_derived", "weakest_rr_regular",
                "rating_gap_vs_weakest", "displacement_call", "auction_shortlist"]].round(2).to_string())
 
@@ -194,7 +199,7 @@ def main():
     axes[0].set_ylabel("NRAE per 100 pressure balls, RR minus league (label = rank of 10)")
     axes[0].legend(frameon=False)
     fig.suptitle("Rajasthan Royals under pressure by phase, IPL 2025 and 2026 (positive = better than league)")
-    fig.tight_layout(); fig.savefig(os.path.join(FIGURES, "rr_gap.png")); plt.close(fig)
+    fig.tight_layout(); fig.savefig(figure_path); plt.close(fig)
 
 
 if __name__ == "__main__":

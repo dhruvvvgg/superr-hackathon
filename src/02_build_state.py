@@ -179,6 +179,21 @@ def main():
     tgt[is_w] = np.minimum(np.maximum(m.target_recon[is_w], lo), np.maximum(m.tot_2[is_w], lo))
     m["target_anchored"] = tgt
     m["target"] = m.target_anchored if CFG["target_mode"] == "result_anchored" else m.target_recon
+    m["target_source"] = np.select(
+        [is_r, is_w, is_t],
+        ["result_anchored_run_margin", "result_anchored_wicket_margin", "result_anchored_tie"],
+        default="first_innings_reconstruction")
+    m["target_adjustment_runs"] = m.target_anchored - m.target_recon
+    target_audit = m[m.clean][["match_id", "match_date", "res_kind", "res_n", "tot_1", "tot_2",
+                               "score_before_last_2", "target_recon", "target_anchored", "target",
+                               "target_source", "target_adjustment_runs"]].copy()
+    target_audit.to_csv(os.path.join(TABLES, "target_reconstruction_by_match.csv"), index=False, float_format="%.6g")
+    target_summary = target_audit.groupby(["res_kind", "target_source"]).agg(
+        matches=("match_id", "nunique"), mean_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().mean()),
+        median_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().median()),
+        max_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().max()),
+        adjusted_matches=("target_adjustment_runs", lambda x: int((x.abs() > 1e-9).sum()))).reset_index()
+    save_table(target_summary, "target_reconstruction_audit.csv")
     over = (m.tot_2 - m.target_recon)[is_w]
     short = (m.tot_1 - m.tot_2 - m.res_n)[is_r]
     rows.append(dict(item="wicket-win chases: reconstructed total minus reconstructed target, mean",
@@ -207,7 +222,8 @@ def main():
 
     # ---- attach match info to deliveries --------------------------------------------------
     keep = ["match_id", "comp_id", "match_date", "year", "tier", "venue_id", "venue_avg", "clean",
-            "reduced", "win_team_id", "target", "home_team_id", "away_team_id", "home_assoc",
+            "reduced", "win_team_id", "target", "target_recon", "target_anchored", "target_source",
+            "target_adjustment_runs", "home_team_id", "away_team_id", "home_assoc",
             "away_assoc", "stage", "knock_out"]
     b = checked_merge(b, m[keep], "deliveries+match info", on="match_id", how="left", validate="m:1")
     b["bat_assoc"] = np.where(b.batting_team_id == b.home_team_id, b.home_assoc, b.away_assoc)
