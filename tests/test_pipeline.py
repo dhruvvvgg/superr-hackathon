@@ -354,6 +354,10 @@ def test_playing_eleven_anomalies_have_reconcilable_detail():
 
 
 def test_temporal_validation_is_forward_only_at_rating_layer():
+    expected_folds = T("expected_fold_audit.csv")
+    forward = expected_folds[expected_folds.fold >= 0]
+    assert (pd.to_datetime(forward.train_max_date) < pd.to_datetime(forward.test_min_date)).all()
+    assert (forward.future_train_matches == 0).all()
     tv = pd.read_csv(os.path.join(V3, "temporal_validation.csv"))
     assert len(tv) >= 8
     assert (pd.to_datetime(tv.train_max_date) < pd.to_datetime(tv.test_min_date)).all()

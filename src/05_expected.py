@@ -88,6 +88,19 @@ def main():
     # ---- resource table and wicket value (first innings of clean matches) -----------------------
     i1 = b.innings == 1
     fold_values = sorted(b.fold.unique().tolist())
+    fold_audit = []
+    for k in fold_values:
+        tr_fold = train_mask_for_fold(b.fold.values, k)
+        te_fold = b.fold.values == k
+        tr_dates = pd.to_datetime(b.loc[tr_fold, "match_date"])
+        te_dates = pd.to_datetime(b.loc[te_fold, "match_date"])
+        fold_audit.append(dict(fold=int(k), kind="warmup_crossfit" if k < 0 else "forward_temporal",
+                               train_matches=int(b.loc[tr_fold, "match_id"].nunique()),
+                               test_matches=int(b.loc[te_fold, "match_id"].nunique()),
+                               train_max_date=tr_dates.max().date().isoformat(),
+                               test_min_date=te_dates.min().date().isoformat(),
+                               future_train_matches=int((tr_dates >= te_dates.min()).sum())))
+    save_table(pd.DataFrame(fold_audit), "expected_fold_audit.csv")
     wkt_value = np.full(len(b), np.nan)
     resource_models = {}
     for k in fold_values:
