@@ -59,7 +59,8 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
 
     Calibration/bias estimation uses only a match-held-out subset of the training fold.
     Forward folds use the latest 20% of training matches; warm-up peer folds use a
-    deterministic grouped split. The final estimator is refit on the full training fold.
+    deterministic grouped split. Calibrated binary candidates reuse the pilot estimator
+    that generated the calibration scores; regression refits on the full training fold.
     """
     pred = np.full(len(y), np.nan)
     match_ids = np.asarray(match_ids) if match_ids is not None else None
@@ -70,6 +71,8 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
             raise ValueError(f"Empty expected-value train/test split for fold {k}")
         p = dict(PARAMS, objective=objective, **(extra or {}))
         bias = 0.0
+        pilot = None
+        calibrator = None
         if match_ids is not None and match_dates is not None:
             train_matches = np.unique(match_ids[tr])
             if len(train_matches) >= 10:
