@@ -399,11 +399,13 @@ def test_source_edge_case_anomalies_have_row_level_audits():
 
 def test_temporal_validation_is_forward_only_at_rating_layer():
     expected_folds = T("expected_fold_audit.csv")
+    assert (expected_folds.future_train_matches <= expected_folds.train_matches).all()
     forward = expected_folds[expected_folds.fold >= 0]
     assert (pd.to_datetime(forward.train_max_date) < pd.to_datetime(forward.test_min_date)).all()
     assert (forward.future_train_matches == 0).all()
     tv = pd.read_csv(os.path.join(V3, "temporal_validation.csv"))
     assert len(tv) >= 8
+    assert (tv.future_train_matches <= tv.n_train_matches).all()
     assert (pd.to_datetime(tv.train_max_date) < pd.to_datetime(tv.test_min_date)).all()
     assert (tv.future_train_matches == 0).all()
     assert tv.upstream_temporal_status.eq("chronologically_crossfit").all()

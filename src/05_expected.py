@@ -171,7 +171,8 @@ def main():
                                test_matches=int(b.loc[te_fold, "match_id"].nunique()),
                                train_max_date=tr_dates.max().date().isoformat(),
                                test_min_date=te_dates.min().date().isoformat(),
-                               future_train_matches=int((tr_dates >= te_dates.min()).sum())))
+                               future_train_matches=int(b.loc[tr_fold & (pd.to_datetime(b.match_date).values >= te_dates.min()),
+                                                               "match_id"].nunique())))
     save_table(pd.DataFrame(fold_audit), "expected_fold_audit.csv")
     wkt_value = np.full(len(b), np.nan)
     resource_models = {}

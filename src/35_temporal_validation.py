@@ -56,7 +56,7 @@ def evaluate(role, credit_file, cfg):
             n_players=len(common), nrae_corr=c_nrae, wpa_corr=c_wpa, objective=objective,
             train_max_date=train_dates.max().date().isoformat(),
             test_min_date=test_dates.min().date().isoformat(),
-            future_train_matches=int((train_dates >= test_dates.min()).sum()),
+            future_train_matches=int(tr.loc[train_dates >= test_dates.min(), "match_id"].nunique()),
             upstream_temporal_status="chronologically_crossfit",
         ))
     return rows
