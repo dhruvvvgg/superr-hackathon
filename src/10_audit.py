@@ -128,7 +128,7 @@ def main():
     over_limit = (bowl.groupby(["match_id", "innings", "player_id"])
                   .agg(legal_balls=("player_id", "size"), match_date=("match_date", "first"),
                        comp_id=("comp_id", "first"), team_id=("team_id", "first"),
-                       overs=("over", lambda s: tuple(sorted(set(int(x) for x in s.dropna()))))
+                       overs=("over", lambda s: tuple(sorted(set(int(x) for x in s.dropna())))))
                   .reset_index())
     over_limit = over_limit[over_limit.legal_balls > 24].merge(
         player_map, on="player_id", how="left", validate="m:1")
