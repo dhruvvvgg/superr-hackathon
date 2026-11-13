@@ -111,8 +111,7 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
             # A calibration map is valid only for the score distribution of the model
             # that generated its calibration predictions. Reuse that pilot model whenever
             # a calibrator was fitted; otherwise refit on the complete training fold.
-            mdl = (pilot if calibrator is not None else
-                   lgb.LGBMClassifier(**p).fit(X[tr], y[tr]))
+            mdl = _binary_model_for_fold(pilot, calibrator, X, y, tr, p)
             raw = np.clip(mdl.predict_proba(X[te])[:, 1], 1e-5, 1 - 1e-5)
             if calibrator is not None:
                 raw_logit = np.log(raw / (1 - raw)).reshape(-1, 1)
@@ -123,6 +122,15 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
             mdl = lgb.LGBMRegressor(**p).fit(X[tr], y[tr])
             pred[te] = mdl.predict(X[te]) + bias
     return pred
+
+def _binary_model_for_fold(pilot, calibrator, X, y, tr, params):
+    """Use the same fitted estimator for calibration and scoring."""
+    if calibrator is not None:
+        if pilot is None:
+            raise ValueError("A calibrated binary model requires its fitted pilot estimator")
+        return pilot
+    return lgb.LGBMClassifier(**params).fit(X[tr], y[tr])
+
 
 def add_feats(d):
     d["phase_c"] = d.phase.map(PHASE_CODE)
