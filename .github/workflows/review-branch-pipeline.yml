@@ -1,5 +1,5 @@
 name: Review branch full pipeline
-# Trigger a fresh full validation after the chronological venue-prior fix.
+# Trigger full validation after fold-local expected-run calibration and acceptance updates.
 
 on:
   push:
