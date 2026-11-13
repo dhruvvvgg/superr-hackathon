@@ -159,9 +159,21 @@ def main():
     # ---- 3 ------------------------------------------------------------------------------------------
     A("## 3. Data quality log\n")
     diff = dq[(dq.stage == "01_profile") & (dq.status == "DIFFERS")][["check", "claimed", "observed", "note"]]
+    scope_checks = [
+        "overs with >6 legal balls, other legal (handover rule)",
+        "DLS in result text but no revised field",
+        "batters with >=200 balls faced", "batters with >=500 balls faced",
+        "bowlers with >=200 balls bowled", "bowlers with >=500 balls bowled"
+    ]
+    scope = dq[dq.check.isin(scope_checks)][["check", "claimed", "observed", "status", "note"]]
     A(f"`src/01_profile.py` re-verified {int((dq.stage == '01_profile').sum())} facts from the build specification "
-      "(`data_quality.csv`). Differences:\n")
-    A(md(diff) + "\n")
+      "(`data_quality.csv`).\n")
+    if diff.empty:
+        A("No unresolved specification mismatches remain. The following rows are documented scope diagnostics, "
+          "not integrity failures:\n")
+    else:
+        A("Specification differences requiring interpretation:\n" + md(diff) + "\n")
+    A(md(scope) + "\n")
     A("- **Legal balls.** The specification's rule (\"other\" extras are legal) gives 244 overs with more than six "
       "legal balls. Treating \"other\" as a no-ball gives 1. The adopted rule is: illegal = wide, Overstep, other.")
     A(f"- **Wicket check.** {dq[dq.check.str.startswith('wicket check')].note.iloc[0]} agree with the result "
