@@ -228,10 +228,13 @@ def main():
                   on=["match_date", "tier"], how="left", validate="m:1")
     v1 = v1.merge(gd[["match_date", "global_sum_prior", "global_n_prior"]],
                   on="match_date", how="left", validate="m:1")
-    global_prior = np.divide(v1.global_sum_prior, v1.global_n_prior,
-                             out=np.full(len(v1), 150.0), where=v1.global_n_prior.to_numpy() > 0)
-    tier_prior = np.divide(v1.tier_sum_prior, v1.tier_n_prior,
-                           out=global_prior.copy(), where=v1.tier_n_prior.to_numpy() > 0)
+    global_sum = v1.global_sum_prior.to_numpy(dtype=float)
+    global_n = v1.global_n_prior.to_numpy(dtype=float)
+    tier_sum = v1.tier_sum_prior.to_numpy(dtype=float)
+    tier_n = v1.tier_n_prior.to_numpy(dtype=float)
+    global_prior = np.divide(global_sum, global_n, out=np.full(len(v1), 150.0),
+                             where=global_n > 0)
+    tier_prior = np.divide(tier_sum, tier_n, out=global_prior.copy(), where=tier_n > 0)
     K = 3.0
     v1["venue_avg"] = (v1.venue_sum_prior.fillna(0) + K * tier_prior) / (v1.venue_n_prior.fillna(0) + K)
     m = checked_merge(m, v1[["match_id", "venue_avg"]], "matches+past-only venue average", on="match_id", how="left")
