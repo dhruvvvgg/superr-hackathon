@@ -1,8 +1,9 @@
 # SupeRR Selector Season 2: pressure-player model for Rajasthan Royals
 
-A reproducible pipeline that defines pressure in T20 cricket from win-probability leverage, measures how
-batters and bowlers perform under it relative to an identity-free baseline, and ranks the most reliable
-players. The recommended final answer is `docs/V3_FINDINGS.md` (outputs in `outputs/v3/`). `docs/V2_FINDINGS.md` records the intermediate redesign. `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
+A reproducible pipeline that defines T20 pressure from win-probability leverage and ranks players by
+leverage-weighted, opponent-adjusted performance relative to an identity-free expected-value baseline.
+Within-player pressure-versus-normal contrasts and pressure-innings dispersion are reported separately;
+they are descriptive diagnostics, not components of the V3 ranking. The recommended final answer is `docs/V3_FINDINGS.md` (outputs in `outputs/v3/`). `docs/V2_FINDINGS.md` records the intermediate redesign. `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
 
 ## Run
 

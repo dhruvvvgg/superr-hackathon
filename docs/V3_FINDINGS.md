@@ -62,7 +62,7 @@ Figure: `outputs/v3/v3_top10_batters.png`.
 
 Figure: `outputs/v3/v3_top10_bowlers.png`.
 
-## 2. How much better than V2, measured on the same trials
+## 2. Predictive comparison with V2 (legacy confirmation is descriptive only)
 
 | role | trials | v3 | v2 | gain | gain_se | gain_z | n_trials |
 |---|---|---|---|---|---|---|---|
@@ -248,7 +248,23 @@ Chosen configuration (`outputs/v3/chosen_config.json`):
 - No pitch, weather, dew, fielding or ball-tracking data; bye and leg-bye run values are not recorded.
 - Availability for the auction is unknown until retention lists are published.
 
-## 6. Reproduce
+
+## 6. Forward-in-time rating-only validation
+
+See outputs/v3/temporal_validation.csv. Each row fits V3 on matches before a cutoff and evaluates the same players on the following six/seven months. This is a forward-only check of the rating fit on the existing credit tables. It does not remove upstream temporal leakage: the credit residuals still inherit win-probability and expected-value predictions produced by grouped random folds. It must not be described as a clean end-to-end holdout.
+
+The final RR fit is regenerated from V3 ratings and V3 batter credit in outputs/v3/rr_fit/. The earlier phase-1 fit remains in outputs/tables/ for comparison.
+
+## 7. Scope of the pressure objective
+
+The ranked quantity is overall leverage-weighted NRAE, not the difference between a player's pressure performance and their own normal performance. The latter is shown separately as a raw descriptive contrast in the ratings files (raw_pressure_uplift); it is not context-adjusted and is not used to rank players. Consistency is likewise not part of the V3 score. Pressure-innings dispersion (press_innings_nrae_mad) is available as a descriptive stability diagnostic, but is sample-size sensitive.
+
+## 8. Reproduction and caveats
+
+The full pipeline now runs the acceptance suite automatically after all stages. The 83 missing striker-to-playing-XI references and 40 duplicate playing-XI rows are exported to outputs/tables/playing_eleven_missing_strikers.csv and playing_eleven_duplicates.csv; they remain documented source anomalies rather than silently corrected records.
+
+
+## 9. Reproduce
 
 ```bash
 python run_all.py
@@ -256,7 +272,7 @@ python run_all.py
 
 Stages 31 (richer batter baseline), 30 (all experiment rounds, about 20 minutes), 32 (ratings) and 33 (this report).
 
-## Exact dropdown selections
+## 10. Exact dropdown selections
 
 **Batters**
 
@@ -283,18 +299,3 @@ Stages 31 (richer batter baseline), 30 (all experiment rounds, about 20 minutes)
 8. Axar Patel (2876)
 9. Mohsin Khan (6669)
 10. Matheesha Pathirana (8661)
-
-
-## 6. Forward-in-time rating-only validation
-
-See outputs/v3/temporal_validation.csv. Each row fits V3 on matches before a cutoff and evaluates the same players on the following six/seven months. This is a forward-only check of the rating fit on the existing credit tables. It does not remove upstream temporal leakage: the credit residuals still inherit win-probability and expected-value predictions produced by grouped random folds. It must not be described as a clean end-to-end holdout.
-
-The final RR fit is regenerated from V3 ratings and V3 batter credit in outputs/v3/rr_fit/. The earlier phase-1 fit remains in outputs/tables/ for comparison.
-
-## 7. Scope of the pressure objective
-
-The ranked quantity is overall leverage-weighted NRAE, not the difference between a player's pressure performance and their own normal performance. The latter is shown separately as a raw descriptive contrast in the ratings files (raw_pressure_uplift); it is not context-adjusted and is not used to rank players. Consistency is likewise not part of the V3 score. Pressure-innings dispersion (press_innings_nrae_mad) is available as a descriptive stability diagnostic, but is sample-size sensitive.
-
-## 8. Reproduction and caveats
-
-The full pipeline now runs the acceptance suite automatically after all stages. The 83 missing striker-to-playing-XI references and 40 duplicate playing-XI rows are exported to outputs/tables/playing_eleven_missing_strikers.csv and playing_eleven_duplicates.csv; they remain documented source anomalies rather than silently corrected records.

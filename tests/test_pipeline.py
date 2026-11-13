@@ -360,3 +360,11 @@ def test_v3_rr_fit_uses_v3_ratings():
     fit = pd.read_csv(out)
     assert set(fit.group) == {"batter", "bowler"}
     assert fit.rating.notna().all()
+
+
+def test_v3_ratings_expose_descriptive_uplift_without_changing_score():
+    for label in ("batters", "bowlers"):
+        full = pd.read_csv(os.path.join(V3, f"ratings_{label}.csv"))
+        assert "raw_pressure_uplift" in full.columns
+        assert "press_innings_nrae_mad" in full.columns
+        assert np.allclose(full.rating, full.runs_part + full.wicket_part, atol=1e-3)
