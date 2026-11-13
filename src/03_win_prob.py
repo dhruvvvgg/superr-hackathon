@@ -175,7 +175,7 @@ def main():
                 note=f"10 equal-width bins per innings; bins outside 2 sd of match-bootstrap noise: "
                      f"{int((~ct.gap_within_2sd).sum())} of {len(ct)}"),
            dict(stage="03_win_prob", check="every match scored by a model that did not see it",
-                claimed=True, observed=True, status="pass", note="5 folds grouped by match_id")]
+                claimed=True, observed=True, status="pass", note="warm-up peer cross-fit plus five forward-only chronological folds")]
     save_table(pd.concat([dq, pd.DataFrame(acc)], ignore_index=True), "data_quality.csv")
 
 
