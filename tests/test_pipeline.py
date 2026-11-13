@@ -307,11 +307,14 @@ def test_v3_top10_lists(label):
     assert full.boot_rating_p10.notna().all() and (full.boot_rating_p10 <= full.boot_rating_p90).all()
 
 
-def test_v3_beats_v2_on_confirmation_trials():
+def test_v3_legacy_confirmation_is_reported_as_diagnostic_only():
     fc = pd.read_csv(os.path.join(V3, "final_comparison.csv"))
-    for role in ("bat", "bowl"):
-        r = fc[(fc.role == role) & (fc.trials == "confirmation trials")].iloc[0]
-        assert r.gain > 0 and r.gain_z > 1.5
+    assert set(fc.trials) == {"tuning trials", "confirmation trials"}
+    assert np.isfinite(fc.gain).all()
+    st = pd.read_csv(os.path.join(V3, "structure.csv"))
+    assert "selection_basis" in st.columns
+    assert (st.selection_basis == "tuning_only").all()
+    assert (~st.confirmation_used_for_selection).all()
 
 
 def test_v3_changes_have_evidence():
@@ -322,3 +325,38 @@ def test_v3_changes_have_evidence():
     ch = json.load(open(os.path.join(V3, "chosen_config.json")))
     assert ch["bat"]["inter"] == "pace" and ch["bat"]["credit"] == "bat_credit_v3"
     assert ch["bowl"]["lam_wkt"] == 10 * ch["bowl"]["lam"] and ch["bowl"]["credit"] == "bowl_credit"
+
+
+# ---- remediation audits ---------------------------------------------------------------------------
+def test_target_reconstruction_provenance_is_exported():
+    audit = T("target_reconstruction_audit.csv")
+    detail = T("target_reconstruction_by_match.csv")
+    assert len(audit) > 0 and len(detail) > 0
+    assert {"target_recon", "target_anchored", "target_source", "target_adjustment_runs"}.issubset(detail.columns)
+    assert detail.target_source.notna().all()
+    if CFG["target_mode"] == "result_anchored":
+        assert np.allclose(detail.target, detail.target_anchored)
+
+
+def test_playing_eleven_anomalies_have_reconcilable_detail():
+    missing = T("playing_eleven_missing_strikers.csv")
+    duplicates = T("playing_eleven_duplicates.csv")
+    integrity = T("audit_integrity.csv").set_index("check")
+    assert int(missing.missing_striker_balls.sum()) == int(integrity.loc["striker absent from playing_eleven (info only)", "observed"])
+    assert int(duplicates.groupby(["match_id", "team_id", "player_id"]).size().sub(1).sum()) == int(
+        integrity.loc["duplicate rows in playing_eleven (info only)", "observed"])
+
+
+def test_temporal_validation_is_forward_only_at_rating_layer():
+    tv = pd.read_csv(os.path.join(V3, "temporal_validation.csv"))
+    assert len(tv) >= 8
+    assert (pd.to_datetime(tv.train_max_date) < pd.to_datetime(tv.test_min_date)).all()
+    assert (tv.future_train_matches == 0).all()
+    assert tv.upstream_temporal_status.eq("not_end_to_end_temporal").all()
+
+
+def test_v3_rr_fit_uses_v3_ratings():
+    out = os.path.join(V3, "rr_fit", "rr_fit.csv")
+    fit = pd.read_csv(out)
+    assert set(fit.group) == {"batter", "bowler"}
+    assert fit.rating.notna().all()

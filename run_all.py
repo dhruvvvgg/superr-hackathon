@@ -6,7 +6,7 @@ import time
 
 STAGES = ["01_profile", "02_build_state", "03_win_prob", "04_pressure", "05_expected", "06_attribution",
           "07_ratings", "08_robustness", "09_rr_fit", "10_audit", "12_improve", "13_improve2", "11_report", "20_v2_search", "21_v2_rate", "22_v2_report",
-          "31_v3_credit", "30_v3_experiments", "32_v3_rate", "33_v3_report"]
+          "31_v3_credit", "30_v3_experiments", "32_v3_rate", "35_temporal_validation", "33_v3_report", "34_v3_rr_fit"]
 
 
 def main():
@@ -22,7 +22,11 @@ def main():
         if r.returncode != 0:
             sys.exit(f"stage {s} failed with exit code {r.returncode}")
         print(f"== {s} finished in {time.time() - t0:.0f}s ==", flush=True)
-    print(f"== pipeline finished in {(time.time() - t_all) / 60:.1f} min ==")
+    print("== running acceptance tests ==", flush=True)
+    tests = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests"], cwd=root, env=env)
+    if tests.returncode != 0:
+        sys.exit(f"acceptance tests failed with exit code {tests.returncode}")
+    print(f"== pipeline and tests finished in {(time.time() - t_all) / 60:.1f} min ==")
 
 
 if __name__ == "__main__":

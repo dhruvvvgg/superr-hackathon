@@ -18,9 +18,9 @@ python run_all.py
 python -m pytest -q tests
 ```
 
-`run_all.py` runs every stage from the raw CSVs in about 40 minutes on 4 cores (Python 3.13). It accepts a
-first stage, for example `python run_all.py 07`, to resume. All seeds are fixed in `config.json` and two
-runs from scratch give byte-identical tables.
+`run_all.py` runs every stage from the raw CSVs and then executes `python -m pytest -q tests` as the final
+acceptance gate. It accepts a first stage, for example `python run_all.py 07`, to resume. All seeds are fixed
+in `config.json`; deterministic outputs should be compared on the same dependency/platform versions.
 
 The phase 2 model comparisons are not part of `run_all.py` because they take about 40 minutes:
 
@@ -52,6 +52,8 @@ src/31_v3_credit.py         V3: richer situational baseline for batters (own cre
 src/30_v3_experiments.py    V3: structural experiments on the held-out trials (all rounds)
 src/32_v3_rate.py           V3: final ratings and bootstrap intervals (outputs/v3/)
 src/33_v3_report.py         V3: final comparison, figures and docs/V3_FINDINGS.md
+src/34_v3_rr_fit.py         V3: RR fit using V3 ratings and V3 batter credit
+src/35_temporal_validation.py V3: forward-only rating-fit diagnostics on existing credit tables
 src/v3_lib.py               V3 rating engine (separate wicket shrinkage, interaction terms)
 src/11_report.py            writes docs/FINDINGS.md from the output tables
 src/phase2_experiments.py   side-by-side model variants scored on model quality
@@ -59,12 +61,17 @@ src/*_lib.py, common.py     shared code
 tests/                      acceptance checks and leakage guards
 outputs/tables, figures     everything FINDINGS.md cites
 outputs/phase1/, phase2/      earlier results (pre-audit, and after the role-aware baseline), kept for comparison
+outputs/v3/rr_fit/             RR incumbent/gap/shortlist analysis using V3 ratings
+outputs/v3/temporal_validation.csv  forward-only rating-fit diagnostics (upstream features remain non-temporal)
 context/rr_auction_context.md   public context with source tags
 ```
 
 ## Data notes
 
 - The six CSVs sit unchanged in `data/raw/`. They arrived with plain names, so no renaming was needed.
+- `outputs/v3/rr_fit/` is the current RR fit layer; the earlier outputs/tables/rr_fit.csv is retained as the pre-V3 comparison.
+- `outputs/tables/playing_eleven_missing_strikers.csv` and playing_eleven_duplicates.csv drill down the XI anomalies; they are reported, not silently corrected.
+- `outputs/tables/target_reconstruction_audit.csv` documents how the result-anchored target differs from first-innings reconstruction.
 - `docs/problem_statement.pdf` is the Round 1 brief. `CLAUDE_CODE_HANDOVER.md` is the build specification.
 - `context/rr_auction_context.md` was supplied after the first build (public web research dated
   2026-11-11) and extended with facts derived from the CSVs. Everything not listed there is unverified.
