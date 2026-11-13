@@ -54,7 +54,7 @@ src/30_v3_experiments.py    V3: structural experiments on the held-out trials (a
 src/32_v3_rate.py           V3: final ratings and bootstrap intervals (outputs/v3/)
 src/33_v3_report.py         V3: final comparison, figures and docs/V3_FINDINGS.md
 src/34_v3_rr_fit.py         V3: RR fit using V3 ratings and V3 batter credit
-src/35_temporal_validation.py V3: forward-only rating-fit diagnostics on existing credit tables
+src/35_temporal_validation.py V3: forward-only rating diagnostics on chronologically cross-fit features
 src/v3_lib.py               V3 rating engine (separate wicket shrinkage, interaction terms)
 src/11_report.py            writes docs/FINDINGS.md from the output tables
 src/phase2_experiments.py   side-by-side model variants scored on model quality
@@ -63,7 +63,7 @@ tests/                      acceptance checks and leakage guards
 outputs/tables, figures     everything FINDINGS.md cites
 outputs/phase1/, phase2/      earlier results (pre-audit, and after the role-aware baseline), kept for comparison
 outputs/v3/rr_fit/             RR incumbent/gap/shortlist analysis using V3 ratings
-outputs/v3/temporal_validation.csv  forward-only rating-fit diagnostics (upstream features remain non-temporal)
+outputs/v3/temporal_validation.csv  forward-only rating diagnostics on chronologically cross-fit features
 context/rr_auction_context.md   public context with source tags
 ```
 

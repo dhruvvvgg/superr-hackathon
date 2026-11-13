@@ -1,8 +1,9 @@
 """Forward-only rating-fit diagnostics on existing credit tables.
 
-This isolates temporal validation at the rating-fit layer. Upstream NRAE residuals still inherit
-win-probability and expected-value predictions from grouped random-fold OOF models, so results
-are explicitly not an end-to-end leakage-free validation and are not used for model selection.
+The pipeline now generates win-probability, leverage, pressure flags, resource values, expected-value
+residuals, venue context and ridge-CV folds with chronological cross-fitting. The initial warm-up period
+uses internal match-group cross-fitting; every later fold trains only on earlier dates. This report is
+diagnostic and is not used for model selection.
 """
 import json
 import os
@@ -56,7 +57,7 @@ def evaluate(role, credit_file, cfg):
             train_max_date=train_dates.max().date().isoformat(),
             test_min_date=test_dates.min().date().isoformat(),
             future_train_matches=int((train_dates >= test_dates.min()).sum()),
-            upstream_temporal_status="not_end_to_end_temporal",
+            upstream_temporal_status="chronologically_crossfit",
         ))
     return rows
 

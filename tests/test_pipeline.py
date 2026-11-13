@@ -110,6 +110,10 @@ def test_no_match_scored_by_a_model_that_saw_it():
     fm = pd.Series(pk["fold_map"])
     assert (wp.drop_duplicates("match_id").set_index("match_id").fold == fm.reindex(wp.match_id.unique())).all()
     assert wp.wp_before.between(0, 1).all()
+    assert set(pk["fold_values"]) == set(range(-CFG["wp"]["n_folds"], CFG["wp"]["n_folds"]))
+    for k in pk["fold_values"]:
+        if k >= 0:
+            assert pk["fold_train_max_date"][k] < pk["fold_test_min_date"][k]
 
 
 def test_wpa_sums_to_result(balls):
@@ -352,7 +356,7 @@ def test_temporal_validation_is_forward_only_at_rating_layer():
     assert len(tv) >= 8
     assert (pd.to_datetime(tv.train_max_date) < pd.to_datetime(tv.test_min_date)).all()
     assert (tv.future_train_matches == 0).all()
-    assert tv.upstream_temporal_status.eq("not_end_to_end_temporal").all()
+    assert tv.upstream_temporal_status.eq("chronologically_crossfit").all()
 
 
 def test_v3_rr_fit_uses_v3_ratings():
