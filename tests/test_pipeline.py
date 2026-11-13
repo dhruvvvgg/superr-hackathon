@@ -167,9 +167,11 @@ def test_slots_equal_legal_balls(balls, bowl):
 
 
 
-def test_expected_wicket_credit_uses_fold_local_phase_mean_baseline(bat, bowl):
+def test_expected_wicket_credit_uses_fold_local_phase_mean_baseline():
     metrics = T("expected_model_metrics.csv").set_index("model")
-    for role, d in [("batter", bat), ("bowler", bowl)]:
+    bat_rows = pd.read_parquet(os.path.join(INTERIM, "bat_rows.parquet"))
+    bowl_rows = pd.read_parquet(os.path.join(INTERIM, "bowl_rows.parquet"))
+    for role, d in [("batter", bat_rows), ("bowler", bowl_rows)]:
         selected = metrics.loc[f"{role} xWkt"]
         candidate = metrics.loc[f"{role} xWkt candidate"]
         assert selected.selected_method == "fold_local_phase_mean"
