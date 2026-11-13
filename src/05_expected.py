@@ -108,7 +108,11 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
         else:
             calibrator = None
         if objective == "binary":
-            mdl = lgb.LGBMClassifier(**p).fit(X[tr], y[tr])
+            # A calibration map is valid only for the score distribution of the model
+            # that generated its calibration predictions. Reuse that pilot model whenever
+            # a calibrator was fitted; otherwise refit on the complete training fold.
+            mdl = (pilot if calibrator is not None else
+                   lgb.LGBMClassifier(**p).fit(X[tr], y[tr]))
             raw = np.clip(mdl.predict_proba(X[te])[:, 1], 1e-5, 1 - 1e-5)
             if calibrator is not None:
                 raw_logit = np.log(raw / (1 - raw)).reshape(-1, 1)
