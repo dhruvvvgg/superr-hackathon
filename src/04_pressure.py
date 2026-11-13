@@ -1,4 +1,4 @@
-"""Stage 04: leverage index, pressure score, tiers, rule-based variants and validation.
+"""Stage 04: leverage from fold-specific historical outcome frequencies, past-only pressure scores and validation.
 
 Outputs
   data/interim/pressure.parquet     per delivery: wp_before, wp_after, wpa, leverage, pscore, flags

@@ -1,4 +1,4 @@
-"""Stage 05: identity-free expected-value baselines (out-of-fold) and the wicket value table.
+"""Stage 05: identity-free expected-value baselines and wicket values with chronological cross-fitting.
 
 Batter unit: every delivery faced (not a wide). Bowler unit: a legal-ball slot, i.e. one legal
 ball plus the wides and no-balls that preceded it.

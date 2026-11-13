@@ -1,4 +1,4 @@
-"""Stage 03: out-of-fold win-probability model.
+"""Stage 03: out-of-fold win-probability model with chronological warm-up and forward-only test folds.
 
 Outputs
   data/interim/wp.parquet           wp_before (out-of-fold), fold id, comparison-model predictions

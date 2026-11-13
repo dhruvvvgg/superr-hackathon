@@ -111,7 +111,7 @@ class Prep:
         return beta[a:b], beta[a2:b2], beta
 
     def cv_lambdas(self, grid_main=None, grid_delta=None):
-        """5-fold CV grouped by match (the win-probability folds). Returns best pair and the table."""
+        """Chronological cross-validation using warm-up peer folds and past-only forward folds."""
         grid_main = grid_main or CFG["ridge"]["lambda_main_grid"]
         grid_delta = grid_delta or CFG["ridge"]["lambda_delta_grid"]
         w = self.w0
