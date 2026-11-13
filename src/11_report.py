@@ -360,7 +360,7 @@ def main():
 
     # ---- 9 ------------------------------------------------------------------------------------------
     A("## 9. Rajasthan Royals fit layer\n")
-    A("This layer sits on top of the rankings and does not feed them. Public context and its sourcing are in "
+    A("These identity-free expectations feed the player-credit calculations used by the rankings. Public context and its sourcing are in "
       "`context/rr_auction_context.md`. Overseas status is derived (national side in the mapping file is not "
       "India). Availability is \"unknown, check after retention list\" for every player: the retention and release "
       "deadline was moved to 17 November 2026 and the lists were not public when this was written. The IPL 2027 "
