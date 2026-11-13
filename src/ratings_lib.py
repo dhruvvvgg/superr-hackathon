@@ -9,7 +9,7 @@ import pandas as pd
 import scipy.sparse as sp
 from scipy.linalg import cho_factor, cho_solve
 
-from common import CFG
+from common import CFG, train_mask_for_fold
 
 COMPONENTS = ["level", "impact", "consistency", "delta"]
 
@@ -115,34 +115,31 @@ class Prep:
         grid_main = grid_main or CFG["ridge"]["lambda_main_grid"]
         grid_delta = grid_delta or CFG["ridge"]["lambda_delta_grid"]
         w = self.w0
-        G_all, c_all = self.gram(w)
         folds = sorted(np.unique(self.fold))
-        parts = {}
-        for k in folds:
-            rows = np.where(self.fold == k)[0]
-            parts[k] = (rows,) + self.gram(w, rows)
         res = []
         for lm in grid_main:
             for ld in grid_delta:
                 pen = self.penalty(lm, ld)
                 sse, sw = 0.0, 0.0
                 for k in folds:
-                    rows, Gk, ck = parts[k]
-                    A = G_all - Gk
+                    te = self.fold == k
+                    tr = train_mask_for_fold(self.fold, k)
+                    G, c = self.gram(w, tr)
+                    A = G.copy()
                     A[np.diag_indices_from(A)] += pen
-                    beta = cho_solve(cho_factor(A, overwrite_a=True, check_finite=False), c_all - ck,
+                    beta = cho_solve(cho_factor(A, overwrite_a=True, check_finite=False), c,
                                      check_finite=False)
-                    e = self.y[rows] - self.X[rows] @ beta
-                    sse += float(np.sum(w[rows] * e * e))
-                    sw += float(w[rows].sum())
+                    e = self.y[te] - self.X[te] @ beta
+                    sse += float(np.sum(w[te] * e * e))
+                    sw += float(w[te].sum())
                 res.append(dict(lambda_main=lm, lambda_delta=ld, cv_wmse=sse / sw))
         tab = pd.DataFrame(res)
-        # reference: no player or context terms at all (intercept, pressure flag, tier only)
+        # Reference baseline uses the same forward-only fold policy, without player/context terms.
         sse, sw = 0.0, 0.0
         Z = self.X[:, :4].toarray()
         for k in folds:
             te = self.fold == k
-            tr = ~te
+            tr = train_mask_for_fold(self.fold, k)
             A = (Z[tr] * w[tr, None]).T @ Z[tr] + 1e-6 * np.eye(4)
             beta = np.linalg.solve(A, (Z[tr] * w[tr, None]).T @ self.y[tr])
             e = self.y[te] - Z[te] @ beta

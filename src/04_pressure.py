@@ -12,7 +12,7 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from common import CFG, INTERIM, FIGURES, save_table, setup_matplotlib, checked_merge
+from common import CFG, INTERIM, FIGURES, save_table, setup_matplotlib, checked_merge, train_mask_for_fold
 from wp_lib import wp_states, TIER_CODE
 
 OUTCOMES = ["dot", "1", "2", "3", "4", "6", "wicket", "wide", "noball"]
@@ -76,10 +76,16 @@ def main():
     run_o = dict(zip(OUTCOMES, [0, 1, 2, 3, 4, 6, 0, val["wide"], val["Overstep"]]))
     lev = np.zeros(len(b))
     tier_code = b.tier.map(TIER_CODE).values
-    P = freq.reindex(pd.MultiIndex.from_arrays([b.innings, b.phase])).values
-    for k, mdl in enumerate(models):
-        msk = (b.fold == k).values
+    fold_values = pk.get("fold_values", sorted(b.fold.unique().tolist()))
+    if len(models) != len(fold_values):
+        raise AssertionError("WP model list and fold metadata are inconsistent")
+    for fold_id, mdl in zip(fold_values, models):
+        msk = (b.fold == fold_id).values
         d = b[msk]
+        train = train_mask_for_fold(b.fold.values, fold_id)
+        freq_train = (b.loc[train].groupby(["innings", "phase"]).outcome.value_counts(normalize=True)
+                      .unstack(fill_value=0.0).reindex(columns=OUTCOMES, fill_value=0.0))
+        P = freq_train.reindex(pd.MultiIndex.from_arrays([d.innings, d.phase])).fillna(0.0).values
         for j, o in enumerate(OUTCOMES):
             legal = o not in ("wide", "noball")
             wkt = 1 if o == "wicket" else 0
@@ -90,11 +96,28 @@ def main():
                               d.wkts_last12.values - d.w12_drop.values + wkt,
                               np.where(r == 0, d.dot_streak.values + 1, 0), d.venue_avg.values, tier_code[msk])
             dw = w_new - d.wp_before.values
-            lev[msk] += P[msk, j] * (np.abs(dw) if CFG["leverage"]["kind"] == "mean_abs" else dw * dw)
+            lev[msk] += P[:, j] * (np.abs(dw) if CFG["leverage"]["kind"] == "mean_abs" else dw * dw)
     if CFG["leverage"]["kind"] != "mean_abs":
         lev = np.sqrt(lev)                      # root-mean-square swing
     b["leverage_raw"] = lev
-    b["leverage"] = lev / lev.mean()
+    b["leverage"] = np.nan
+    b["pscore"] = np.nan
+    b["pscore_global"] = np.nan
+    for fold_id in fold_values:
+        train = train_mask_for_fold(b.fold.values, fold_id)
+        test = b.fold.values == fold_id
+        historical = b.loc[train, "leverage_raw"].to_numpy(dtype=float)
+        if not len(historical) or historical.mean() <= 0:
+            raise ValueError(f"No historical leverage reference for fold {fold_id}")
+        b.loc[test, "leverage"] = b.loc[test, "leverage_raw"] / historical.mean()
+        for inn in (1, 2):
+            ref_inn = b.loc[train & (b.innings.values == inn), "leverage_raw"].to_numpy(dtype=float)
+            test_inn = test & (b.innings.values == inn)
+            if not len(ref_inn):
+                raise ValueError(f"No historical leverage reference for innings {inn}, fold {fold_id}")
+            b.loc[test_inn, "pscore"] = 100 * np.searchsorted(np.sort(ref_inn), b.loc[test_inn, "leverage_raw"], side="right") / len(ref_inn)
+        b.loc[test, "pscore_global"] = 100 * np.searchsorted(np.sort(historical), b.loc[test, "leverage_raw"], side="right") / len(historical)
+    assert b.leverage.notna().all() and b.pscore.notna().all() and b.pscore_global.notna().all()
     print(f"  mean raw leverage (expected |dWP| per ball): {lev.mean():.4f}")
     from scipy.stats import spearmanr as _sp
     lev_valid = pd.DataFrame([dict(
@@ -105,8 +128,6 @@ def main():
         mean_abs_wpa_bottom50pct=b.wpa.abs()[lev < np.quantile(lev, 0.5)].mean())])
     save_table(lev_valid, "leverage_validity.csv")
 
-    b["pscore"] = b.groupby("innings").leverage.rank(pct=True) * 100
-    b["pscore_global"] = b.leverage.rank(pct=True) * 100
     pc = CFG["pressure"]
     b["ptier"] = np.select([b.pscore >= pc["extreme"], b.pscore >= pc["high"], b.pscore >= pc["normal"]],
                            ["Extreme", "High", "Normal"], default="Low")
