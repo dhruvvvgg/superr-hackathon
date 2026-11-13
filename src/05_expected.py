@@ -32,12 +32,34 @@ PARAMS = dict(learning_rate=0.05, n_estimators=300, num_leaves=31, min_child_sam
               random_state=SEED, n_jobs=4, deterministic=True, force_row_wise=True, verbose=-1)
 
 
-def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
-    """Out-of-fold predictions; regression gets a match-held-out, fold-local bias correction.
+def phase_mean_oof(y, fold, innings, phase):
+    """Past-fold-only innings/phase mean baseline; never estimates from the scored fold."""
+    y = np.asarray(y, dtype=float)
+    fold = np.asarray(fold)
+    innings = np.asarray(innings)
+    phase = np.asarray(phase)
+    pred = np.full(len(y), np.nan)
+    for k in sorted(np.unique(fold)):
+        tr, te = train_mask_for_fold(fold, k), fold == k
+        if not tr.any() or not te.any():
+            raise ValueError(f"Empty phase-mean train/test split for fold {k}")
+        stats = (pd.DataFrame({"innings": innings[tr], "phase": phase[tr], "y": y[tr]})
+                 .groupby(["innings", "phase"]).y.mean())
+        keys = pd.MultiIndex.from_arrays([innings[te], phase[te]])
+        vals = stats.reindex(keys).to_numpy(dtype=float)
+        vals[~np.isfinite(vals)] = float(np.mean(y[tr]))
+        pred[te] = vals
+    if not np.isfinite(pred).all():
+        raise AssertionError("Phase-mean OOF baseline contains missing predictions")
+    return pred
 
-    The correction is estimated on a calibration subset of the training matches only. For
-    forward folds this is the latest 20% of available training matches; warm-up peer folds
-    use a deterministic grouped split. The final estimator is refit on the full training fold.
+
+def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
+    """Out-of-fold predictions; regression gets fold-local bias correction.
+
+    Calibration/bias estimation uses only a match-held-out subset of the training fold.
+    Forward folds use the latest 20% of training matches; warm-up peer folds use a
+    deterministic grouped split. The final estimator is refit on the full training fold.
     """
     pred = np.full(len(y), np.nan)
     match_ids = np.asarray(match_ids) if match_ids is not None else None
@@ -48,7 +70,7 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
             raise ValueError(f"Empty expected-value train/test split for fold {k}")
         p = dict(PARAMS, objective=objective, **(extra or {}))
         bias = 0.0
-        if objective == "regression" and match_ids is not None and match_dates is not None:
+        if match_ids is not None and match_dates is not None:
             train_matches = np.unique(match_ids[tr])
             if len(train_matches) >= 10:
                 if k >= 0:
@@ -62,16 +84,41 @@ def oof(X, y, fold, objective, extra=None, match_ids=None, match_dates=None):
                 cal = tr & np.isin(match_ids, cal_matches)
                 fit = tr & ~cal
                 if fit.any() and cal.any():
-                    pilot = lgb.LGBMRegressor(**p).fit(X[fit], y[fit])
-                    bias = float(np.mean(y[cal] - pilot.predict(X[cal])))
+                    if objective == "regression":
+                        pilot = lgb.LGBMRegressor(**p).fit(X[fit], y[fit])
+                        bias = float(np.mean(y[cal] - pilot.predict(X[cal])))
+                    elif objective == "binary":
+                        # Keep the candidate classifier available for diagnostics, but calibrate
+                        # its probabilities using only held-out training matches.
+                        from sklearn.linear_model import LogisticRegression
+                        pilot = lgb.LGBMClassifier(**p).fit(X[fit], y[fit])
+                        cp = np.clip(pilot.predict_proba(X[cal])[:, 1], 1e-5, 1 - 1e-5)
+                        clogit = np.log(cp / (1 - cp)).reshape(-1, 1)
+                        if np.unique(y[cal]).size == 2:
+                            calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                            calibrator.fit(clogit, y[cal])
+                        else:
+                            calibrator = None
+                    else:
+                        calibrator = None
+                else:
+                    calibrator = None
+            else:
+                calibrator = None
+        else:
+            calibrator = None
         if objective == "binary":
             mdl = lgb.LGBMClassifier(**p).fit(X[tr], y[tr])
-            pred[te] = mdl.predict_proba(X[te])[:, 1]
+            raw = np.clip(mdl.predict_proba(X[te])[:, 1], 1e-5, 1 - 1e-5)
+            if calibrator is not None:
+                raw_logit = np.log(raw / (1 - raw)).reshape(-1, 1)
+                pred[te] = calibrator.predict_proba(raw_logit)[:, 1]
+            else:
+                pred[te] = raw
         else:
             mdl = lgb.LGBMRegressor(**p).fit(X[tr], y[tr])
             pred[te] = mdl.predict(X[te]) + bias
     return pred
-
 
 def add_feats(d):
     d["phase_c"] = d.phase.map(PHASE_CODE)
@@ -155,7 +202,13 @@ def main():
     print(f"  batter rows: {len(b)} deliveries -> {len(bat)} faced (wides removed: {int(b.is_wide.sum())})")
     Xb = bat[BAT_FEATS].values.astype(float)
     bat["x_runs"] = oof(Xb, bat.runs.values.astype(float), bat.fold.values, "regression", match_ids=bat.match_id.values, match_dates=bat.match_date.values)
-    bat["x_wkt"] = oof(Xb, bat.striker_out.values.astype(int), bat.fold.values, "binary")
+    bat["x_wkt_model"] = oof(Xb, bat.striker_out.values.astype(int), bat.fold.values, "binary",
+                            match_ids=bat.match_id.values, match_dates=bat.match_date.values)
+    bat["x_wkt_baseline"] = phase_mean_oof(bat.striker_out.values.astype(int), bat.fold.values,
+                                           bat.innings.values, bat.phase.values)
+    # The simpler identity-free phase mean is the selected wicket baseline. The calibrated
+    # classifier remains exported for diagnostics but is not allowed to worsen wicket credit.
+    bat["x_wkt"] = bat["x_wkt_baseline"]
 
     # ---- bowler slots ----------------------------------------------------------------------------------
     b["slot"] = b.legal_before
@@ -180,7 +233,11 @@ def main():
     print(f"  bowler slots: {len(bowl)} (= legal balls {int(b.legal.sum())})")
     Xw = bowl[BOWL_FEATS].values.astype(float)
     bowl["x_runs"] = oof(Xw, bowl.bowler_runs.values.astype(float), bowl.fold.values, "regression", match_ids=bowl.match_id.values, match_dates=bowl.match_date.values)
-    bowl["x_wkt"] = oof(Xw, (bowl.bowler_wkt.values > 0).astype(int), bowl.fold.values, "binary")
+    bowl["x_wkt_model"] = oof(Xw, (bowl.bowler_wkt.values > 0).astype(int), bowl.fold.values, "binary",
+                             match_ids=bowl.match_id.values, match_dates=bowl.match_date.values)
+    bowl["x_wkt_baseline"] = phase_mean_oof((bowl.bowler_wkt.values > 0).astype(int), bowl.fold.values,
+                                             bowl.innings.values, bowl.phase.values)
+    bowl["x_wkt"] = bowl["x_wkt_baseline"]
 
     # ---- metrics ---------------------------------------------------------------------------------------
     def rmse(a, p):
@@ -192,12 +249,21 @@ def main():
 
     rows = []
     for name, d, yr, yw in [("batter", bat, "runs", "striker_out"), ("bowler", bowl, "bowler_runs", "bowler_wkt")]:
-        ph_mean_r = d.groupby(["innings", "phase"])[yr].transform("mean")
-        ph_mean_w = d.groupby(["innings", "phase"])[yw].transform("mean")
-        rows += [dict(model=f"{name} xRuns", n=len(d), metric="RMSE", oof=rmse(d[yr], d.x_runs),
-                      phase_mean_baseline=rmse(d[yr], ph_mean_r), mean_actual=d[yr].mean(), mean_pred=d.x_runs.mean()),
-                 dict(model=f"{name} xWkt", n=len(d), metric="log loss", oof=ll(d[yw].astype(float), d.x_wkt),
-                      phase_mean_baseline=ll(d[yw].astype(float), ph_mean_w), mean_actual=d[yw].mean(), mean_pred=d.x_wkt.mean())]
+        yr_true = d[yr].to_numpy(dtype=float)
+        yw_true = d[yw].to_numpy(dtype=float)
+        run_base = phase_mean_oof(yr_true, d.fold.values, d.innings.values, d.phase.values)
+        wkt_base = d.x_wkt_baseline.to_numpy(dtype=float)
+        rows += [
+            dict(model=f"{name} xRuns", n=len(d), metric="RMSE", oof=rmse(yr_true, d.x_runs),
+                 phase_mean_baseline=rmse(yr_true, run_base), mean_actual=yr_true.mean(),
+                 mean_pred=d.x_runs.mean(), selected_method="lightgbm"),
+            dict(model=f"{name} xWkt candidate", n=len(d), metric="log loss",
+                 oof=ll(yw_true, d.x_wkt_model), phase_mean_baseline=ll(yw_true, wkt_base),
+                 mean_actual=yw_true.mean(), mean_pred=d.x_wkt_model.mean(), selected_method="diagnostic_only"),
+            dict(model=f"{name} xWkt", n=len(d), metric="log loss",
+                 oof=ll(yw_true, d.x_wkt), phase_mean_baseline=ll(yw_true, wkt_base),
+                 mean_actual=yw_true.mean(), mean_pred=d.x_wkt.mean(), selected_method="fold_local_phase_mean")
+        ]
         for t in ["Low", "Normal", "High", "Extreme"]:
             s = d[d.ptier == t]
             rows.append(dict(model=f"{name} residual by tier: {t}", n=len(s), metric="mean (actual - expected) runs per ball",

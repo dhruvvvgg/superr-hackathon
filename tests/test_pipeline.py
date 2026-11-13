@@ -100,11 +100,15 @@ def test_wp_beats_state_free_baseline():
 def test_wp_calibration_is_within_diagnostic_tolerance():
     m = T("wp_model_metrics.csv")
     primary = m[(m.role == "primary") & (m["sample"] == "all")].iloc[0]
-    # Dense-bin calibration is a diagnostic, not a 3pp hard gate. Require a bounded
-    # worst-bin gap and at most one bin outside its match-clustered 2-SD band.
     bins = T("wp_calibration_bins.csv")
     assert primary.max_calib_gap_dense_bins <= 0.08
     assert int((~bins.gap_within_2sd).sum()) <= 1
+    quality = T("data_quality.csv")
+    gate = quality[quality.check.isin([
+        "maximum dense-bin calibration gap <= 0.08",
+        "no more than one bin outside match-bootstrap 2-SD band"
+    ])]
+    assert len(gate) == 2 and gate.status.eq("pass").all()
 
 
 def test_no_match_scored_by_a_model_that_saw_it():
@@ -160,6 +164,19 @@ def test_batter_dismissals_charged_once_to_dismissed_player(balls, bat):
 def test_slots_equal_legal_balls(balls, bowl):
     assert len(bowl) == int(balls[balls.clean].legal.sum())
 
+
+
+
+def test_expected_wicket_credit_uses_fold_local_phase_mean_baseline(bat, bowl):
+    metrics = T("expected_model_metrics.csv").set_index("model")
+    for role, d in [("batter", bat), ("bowler", bowl)]:
+        selected = metrics.loc[f"{role} xWkt"]
+        candidate = metrics.loc[f"{role} xWkt candidate"]
+        assert selected.selected_method == "fold_local_phase_mean"
+        assert np.isclose(selected.oof, selected.phase_mean_baseline, atol=1e-9)
+        assert d.x_wkt.notna().all() and d.x_wkt.between(0, 1).all()
+        assert d.x_wkt_model.notna().all() and d.x_wkt_model.between(0, 1).all()
+        assert np.isfinite(candidate.oof)
 
 def test_expected_models_are_centred(bat, bowl):
     f = bat[bat.faced == 1]
@@ -341,6 +358,11 @@ def test_v3_changes_have_evidence():
 
 
 # ---- remediation audits ---------------------------------------------------------------------------
+def test_data_quality_has_no_unresolved_failures():
+    quality = T("data_quality.csv")
+    assert not quality.status.eq("FAIL").any()
+
+
 def test_target_reconstruction_provenance_is_exported():
     audit = T("target_reconstruction_audit.csv")
     detail = T("target_reconstruction_by_match.csv")
