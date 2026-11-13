@@ -2,7 +2,8 @@
 
 Batters: richer-baseline credit (bat_credit_v3), V2 settings plus a shrunk pace-versus-spin adjustment.
 Bowlers: main credit, V2 settings with the wicket part of NRAE shrunk ten times harder than the runs part.
-Each option is backed by outputs/v3/*.csv (tuning z > 2 and not worse on confirmation trials).
+Candidate adoption is based on tuning trials only (paired z > 2). Legacy confirmation results are descriptive
+only because earlier V3 iterations used them for gating; they are not an untouched holdout.
 Rating = shrunk, opponent-adjusted, leverage-weighted NRAE per 100 balls. Eligibility as in V2.
 Output: outputs/v3/ratings_*.csv, top10_*.csv, chosen_config.json
 """
@@ -74,6 +75,13 @@ def main():
         t["n_press_balls"] = n_press.reindex(ids).values.astype(int)
         t["n_total_balls"] = n_total.reindex(ids).values.astype(int)
         t = t.merge(describe(df[df.player_id.isin(ids)], role, "pA"), on="player_id", how="left", validate="1:1")
+        # Descriptive within-player pressure-vs-normal contrast. This is deliberately not part of rating.
+        if role == "bat":
+            t["raw_pressure_uplift"] = t.press_sr - t.normal_sr
+            t["raw_pressure_uplift_unit"] = "strike-rate points (pressure minus normal)"
+        else:
+            t["raw_pressure_uplift"] = t.normal_econ - t.press_econ
+            t["raw_pressure_uplift_unit"] = "runs per over saved (normal minus pressure economy)"
         t.insert(1, "player_name", t.player_id.map(names))
         t["ipl_2026_team"] = t.player_id.map(ipl26)
         t["national_team"] = t.player_id.map(nat)

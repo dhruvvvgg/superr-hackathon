@@ -1,7 +1,9 @@
 """V3 experiments: structural model variants and ensembles, judged on the same held-out trials as V2.
 
-Every candidate is scored on 25 tuning trials and 22 confirmation trials (defined in 20_v2_search.py).
-Paired differences against the V2 configuration. Adoption: > 2 SE on tuning AND not worse on confirmation.
+Every candidate is scored on tuning and legacy confirmation trials (defined in 20_v2_search.py).
+Paired differences are reported against the V2 configuration. Adoption uses tuning trials only (> 2 SE).
+The legacy confirmation trials are descriptive diagnostics, not an untouched holdout: earlier V3 iterations
+used them for candidate gating, so they must not be presented as independent final validation.
 Usage: python src/30_v3_experiments.py <round_name> ; candidates are defined per round below.
 Output: outputs/v3/<round>.csv
 """
@@ -70,7 +72,13 @@ def run_trial(i):
     for name, members in ens.items():
         scores[name] = sum(zs(scores[m]) for m in members) / len(members)
     ww = tg.loc[common, "unit"].values
-    res = {"kind": kind, "n": len(common)}
+    train_dates = pd.to_datetime(tr.match_date)
+    test_dates = pd.to_datetime(te.match_date)
+    temporal = bool(len(train_dates) and len(test_dates) and train_dates.max() < test_dates.min())
+    res = {"kind": kind, "n": len(common), "temporal": temporal,
+           "train_max_date": train_dates.max().date().isoformat() if len(train_dates) else "",
+           "test_min_date": test_dates.min().date().isoformat() if len(test_dates) else "",
+           "test_max_date": test_dates.max().date().isoformat() if len(test_dates) else ""}
     for name, s in scores.items():
         res[name] = 0.5 * (wspearman(s.values, tg.loc[common, "nrae100"].values, ww) +
                            wspearman(s.values, tg.loc[common, "wpa100"].values, ww))
@@ -85,7 +93,8 @@ def evaluate(role, df, cands, ens, base="base"):
     R.to_csv(os.path.join(OUT, f"_trials_{_G.get('rnd', 'x')}_{os.environ.get('SUPERR_TAG', 'main')}_{role}.csv"), index=False)
     rows = []
     for name in list(cands) + list(ens):
-        row = dict(role=role, candidate=name)
+        row = dict(role=role, candidate=name, selection_basis="tuning_only",
+                   confirmation_used_for_selection=False)
         for kind in ("tune", "conf"):
             sub = R[R.kind == kind]
             dif = sub[name] - sub[base]
@@ -93,7 +102,7 @@ def evaluate(role, df, cands, ens, base="base"):
             row[f"{kind}_diff"] = dif.mean()
             row[f"{kind}_se"] = dif.std() / np.sqrt(len(dif)) if dif.std() > 0 else 0.0
             row[f"{kind}_z"] = row[f"{kind}_diff"] / row[f"{kind}_se"] if row[f"{kind}_se"] > 0 else 0.0
-        row["passes"] = bool(row["tune_z"] > 2 and row["conf_diff"] >= 0)
+        row["passes"] = bool(row["tune_z"] > 2)
         rows.append(row)
     return pd.DataFrame(rows)
 

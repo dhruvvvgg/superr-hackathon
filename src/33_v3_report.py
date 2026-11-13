@@ -75,14 +75,17 @@ def main():
 
     L = []; A = L.append
     A("# Final model (V3): who delivers under pressure\n")
-    A("This is the recommended final answer. It is V2 (`docs/V2_FINDINGS.md`) improved by a further round of "
-      "experiments in which every change had to predict later pressure performance better, on the same held-out "
-      "trials, by more than two standard errors, and could not be worse on 22 confirmation trials that played no "
-      "part in choosing. All tables are in `outputs/v3/`.\n")
+    A("This is the recommended candidate model. It is V2 (`docs/V2_FINDINGS.md`) extended with a pace interaction "
+      "for batters and stronger shrinkage of the wicket component for bowlers. Candidate adoption is based on "
+      "the tuning trials only (paired z > 2). The legacy confirmation trials are shown as diagnostics, not as "
+      "an untouched holdout: earlier V3 iterations used them for candidate gating. All tables are in `outputs/v3/`.\n")
     A("## 1. Result\n")
-    A("Rating: runs per 100 balls above an average player in the same situation, weighting every ball by how much "
-      "it could move the match, adjusted for opponents and shrunk toward average for small samples. For batters "
-      "the dismissal cost is included in runs. The interval is the 80% interval over 1,000 resamples of matches.\n")
+    A("Rating: leverage-weighted, opponent-adjusted NRAE per 100 balls, shrunk toward average for small samples. "
+      "It estimates overall performance on high-leverage deliveries relative to an identity-free expected-value "
+      "baseline. It is not a causal estimate of how much a player improves under pressure versus their own "
+      "normal level, and it is not a consistency score. The interval is the 80% interval over 1,000 match resamples. "
+      "Raw pressure-versus-normal strike-rate/economy contrasts and pressure-innings dispersion are supplied "
+      "as descriptive diagnostics; they do not change the ranking.\n")
     for label in ("batters", "bowlers"):
         t = top[label]
         A(f"### Top 10 {label} (`outputs/v3/top10_{label}.csv`)\n")
@@ -101,7 +104,7 @@ def main():
                   f"(per 100 balls); economy {r.press_econ:.2f} under pressure against {r.normal_econ:.2f} otherwise, "
                   f"{int(r.press_wkts)} wickets in {int(r.n_press_balls)} pressure balls.")
         A(f"\nFigure: `outputs/v3/v3_top10_{label}.png`.\n")
-    A("## 2. How much better than V2, measured on the same trials\n")
+    A("## 2. Predictive comparison with V2 (legacy confirmation is descriptive only)\n")
     A(md(fc.assign(role=fc.role.map({"bat": "batters", "bowl": "bowlers"})), 4) + "\n")
     cb_ = c2.set_index(["role", "method"]).objective
     A(f"For comparison on the confirmation trials, raw pressure strike rate scores {cb_[('bat', 'raw strike rate')]:.3f} for "
@@ -117,7 +120,7 @@ def main():
       "workload. Same features did not help bowlers (worse on confirmation), so the bowler baseline is unchanged.\n")
     A("Chosen configuration (`outputs/v3/chosen_config.json`):\n")
     A(md(pd.DataFrame([dict(group=k, **{kk: vv for kk, vv in v.items() if kk != "evidence"}) for k, v in chosen.items()]), 2) + "\n")
-    A("### Every variant tried (paired difference against the current base; adopted only if tune_z > 2 and conf_diff >= 0)\n")
+    A("### Every variant tried (paired difference against the current base; adoption uses tuning z > 2 only)\n")
     keep = ["role", "candidate", "tune_diff", "tune_z", "conf_diff", "conf_z", "passes"]
     A("**Round 1, structure** (`structure.csv`, base = V2):\n")
     A(md(st[keep]) + "\n")
@@ -154,17 +157,27 @@ def main():
     fcw = fc[(fc.role == "bowl") & (fc.trials == "confirmation trials")].iloc[0]
     A(f"- Prediction is modest: held-out correlation about {fcb.v3:.2f} for batters and {fcw.v3:.2f} for bowlers. Batting under "
       "pressure is much less predictable than bowling under pressure in this data.")
-    A("- The two batter changes are small and each only just passes the rule; with about 30 variants tried per group, "
-      "one of them could be a false positive. The bowler change is large and confirmed.")
+    A("- The batter interaction is a modest tuning-set result and is vulnerable to multiple-comparison optimism "
+      "after about 30 variants. The bowler shrinkage change has a larger tuning-set gain. Legacy confirmation "
+      "numbers are not independent evidence because they were used in earlier V3 gating.")
     A("- Ranks 6 to 10 of the batters overlap heavily with ranks 11 to 20 (see the rank intervals).")
-    A("- Win probability, baselines and pressure flags were fitted on all matches. They know nothing about players, "
-      "but strictly they pass a little league-wide information backwards in time inside the rolling trials.")
+    A("- Win probability, expected-value baselines and pressure flags use grouped random-fold out-of-fold "
+      "predictions, not forward-only predictions. Therefore the rolling rating checks below are temporal at "
+      "the rating-fit layer, but are not an end-to-end leakage-free temporal validation.")
     A("- No pitch, weather, dew, fielding or ball-tracking data; bye and leg-bye run values are not recorded.")
     A("- Availability for the auction is unknown until retention lists are published.\n")
-    A("## 6. Reproduce\n")
+    A("## 6. Forward-in-time rating-only validation\n")
+    tv = pd.read_csv(os.path.join(V3, "temporal_validation.csv"))
+    keep_tv = ["role", "cutoff", "n_train_matches", "n_test_matches", "n_players", "nrae_corr", "wpa_corr", "objective", "train_max_date", "test_min_date"]
+    A(md(tv[keep_tv], 4) + "\n")
+    A("Each row fits the V3 rating on matches before the cutoff and scores the same players on the following "
+      "six/seven months. This is a forward-only check of the rating fit on the existing credit tables. It does "
+      "not remove upstream temporal leakage: the credit residuals still inherit win-probability and expected-" 
+      "value predictions produced by grouped random folds. Do not treat this table as a clean end-to-end holdout.\n")
+    A("## 7. Reproduce\n")
     A("```bash\npython run_all.py\n```\n")
     A("Stages 31 (richer batter baseline), 30 (all experiment rounds, about 20 minutes), 32 (ratings) and 33 (this report).\n")
-    A("## Exact dropdown selections\n")
+    A("## 8. Exact dropdown selections\n")
     for k in ("batters", "bowlers"):
         A(f"**{k.capitalize()}**\n")
         for r in top[k].itertuples():
