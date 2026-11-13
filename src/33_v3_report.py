@@ -167,7 +167,7 @@ def main():
       "pipeline after the warm-up period; it is still a diagnostic, not a separately reserved model-selection holdout.")
     A("- No pitch, weather, dew, fielding or ball-tracking data; bye and leg-bye run values are not recorded.")
     A("- Availability for the auction is unknown until retention lists are published.\n")
-    A("## 6. Forward-in-time rating-only validation\n")
+    A("## 6. Forward-in-time validation\n")
     tv = pd.read_csv(os.path.join(V3, "temporal_validation.csv"))
     keep_tv = ["role", "cutoff", "n_train_matches", "n_test_matches", "n_players", "nrae_corr", "wpa_corr", "objective", "train_max_date", "test_min_date"]
     A(md(tv[keep_tv], 4) + "\n")
@@ -178,7 +178,7 @@ def main():
       "final holdout because the broader V3 tuning process has already examined overlapping historical periods.\n")
     A("## 7. Reproduce\n")
     A("```bash\npython run_all.py\n```\n")
-    A("Stages 31 (richer batter baseline), 30 (all experiment rounds, about 20 minutes), 32 (ratings) and 33 (this report).\n")
+    A("Stages 31 (richer batter baseline), 30 (all experiment rounds), 32 (ratings), 35 (forward-only validation), 33 (report) and 34 (V3 RR fit).\n")
     A("## 8. Exact dropdown selections\n")
     for k in ("batters", "bowlers"):
         A(f"**{k.capitalize()}**\n")

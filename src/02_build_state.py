@@ -207,7 +207,7 @@ def main():
                      n=int(m.clean.sum())))
     save_table(pd.DataFrame(rows), "extras_calibration.csv")
 
-    # ---- venue context: leave-one-match-out first-innings average, shrunk to tier mean ---
+    # ---- venue context: strictly past-date first-innings average, shrunk to past tier mean ---
     v1 = m[m.clean][["match_id", "match_date", "venue_id", "tier", "tot_1"]].copy()
     v1["match_date"] = pd.to_datetime(v1.match_date).dt.normalize()
     v1 = v1.sort_values(["match_date", "match_id"]).reset_index(drop=True)

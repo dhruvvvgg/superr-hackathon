@@ -1,4 +1,4 @@
-"""Forward-only rating-fit diagnostics on existing credit tables.
+"""Forward-only V3 rating diagnostics on chronologically cross-fit credit tables.
 
 The pipeline now generates win-probability, leverage, pressure flags, resource values, expected-value
 residuals, venue context and ridge-CV folds with chronological cross-fitting. The initial warm-up period

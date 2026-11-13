@@ -66,7 +66,7 @@ def main():
     assert b.wp_after.notna().all()
     b["wpa"] = b.wp_after - b.wp_before
 
-    # ---- outcome frequencies by phase and innings ----------------------------------------------
+    # ---- outcome frequencies: full-sample descriptive table; fold-specific priors drive leverage ----
     b["outcome"] = classify(b)
     freq = (b.groupby(["innings", "phase"]).outcome.value_counts(normalize=True).unstack(fill_value=0.0)
             .reindex(columns=OUTCOMES, fill_value=0.0))

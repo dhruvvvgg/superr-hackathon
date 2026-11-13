@@ -33,12 +33,12 @@ python src/phase2_experiments.py
 
 ```
 config.json                 every tunable choice: weights, thresholds, grids, seeds
-run_all.py                  runs stages 01 to 11 in order
+run_all.py                  runs stages 01 to 35 in order, then the acceptance suite
 src/01_profile.py           re-verifies the data facts, writes data_quality.csv
 src/02_build_state.py       legal balls, extras calibration, targets, match state
-src/03_win_prob.py          out-of-fold win-probability model and calibration
-src/04_pressure.py          leverage, pressure score, tiers, variants, validation
-src/05_expected.py          identity-free expected runs and wickets, wicket value
+src/03_win_prob.py          warm-up cross-fit plus five forward-only win-probability folds
+src/04_pressure.py          fold-specific leverage, historical pressure percentiles, variants, validation
+src/05_expected.py          chronological expected-value models and fold-specific wicket values
 src/06_attribution.py       ball-level credit (NRAE and WPA) for batters and bowlers
 src/07_ratings.py           ridge and empirical Bayes estimates, consistency, composite
 src/08_robustness.py        bootstrap, sensitivity grid, persistence, decision rule, final lists
