@@ -208,17 +208,37 @@ def main():
     save_table(pd.DataFrame(rows), "extras_calibration.csv")
 
     # ---- venue context: leave-one-match-out first-innings average, shrunk to tier mean ---
-    v1 = m[m.clean][["match_id", "venue_id", "tier", "tot_1"]].copy()
-    tier_mean = v1.groupby("tier").tot_1.transform("mean")
-    vs = v1.groupby("venue_id").tot_1.transform("sum")
-    vn = v1.groupby("venue_id").tot_1.transform("count")
+    v1 = m[m.clean][["match_id", "match_date", "venue_id", "tier", "tot_1"]].copy()
+    v1["match_date"] = pd.to_datetime(v1.match_date).dt.normalize()
+    v1 = v1.sort_values(["match_date", "match_id"]).reset_index(drop=True)
+    # Use only completed matches on strictly earlier dates. Same-day matches are one batch because
+    # ball-by-ball timestamps are unavailable; no match can borrow a venue/tier average from its date.
+    vd = v1.groupby(["match_date", "venue_id"], dropna=False).tot_1.agg(["sum", "count"]).reset_index()
+    vd["venue_sum_prior"] = vd.groupby("venue_id", dropna=False)["sum"].cumsum() - vd["sum"]
+    vd["venue_n_prior"] = vd.groupby("venue_id", dropna=False)["count"].cumsum() - vd["count"]
+    td = v1.groupby(["match_date", "tier"]).tot_1.agg(["sum", "count"]).reset_index()
+    td["tier_sum_prior"] = td.groupby("tier")["sum"].cumsum() - td["sum"]
+    td["tier_n_prior"] = td.groupby("tier")["count"].cumsum() - td["count"]
+    gd = v1.groupby("match_date").tot_1.agg(["sum", "count"]).reset_index()
+    gd["global_sum_prior"] = gd["sum"].cumsum() - gd["sum"]
+    gd["global_n_prior"] = gd["count"].cumsum() - gd["count"]
+    v1 = v1.merge(vd[["match_date", "venue_id", "venue_sum_prior", "venue_n_prior"]],
+                  on=["match_date", "venue_id"], how="left", validate="m:1")
+    v1 = v1.merge(td[["match_date", "tier", "tier_sum_prior", "tier_n_prior"]],
+                  on=["match_date", "tier"], how="left", validate="m:1")
+    v1 = v1.merge(gd[["match_date", "global_sum_prior", "global_n_prior"]],
+                  on="match_date", how="left", validate="m:1")
+    global_prior = np.divide(v1.global_sum_prior, v1.global_n_prior,
+                             out=np.full(len(v1), 150.0), where=v1.global_n_prior.to_numpy() > 0)
+    tier_prior = np.divide(v1.tier_sum_prior, v1.tier_n_prior,
+                           out=global_prior.copy(), where=v1.tier_n_prior.to_numpy() > 0)
     K = 3.0
-    v1["venue_avg"] = (vs - v1.tot_1 + K * tier_mean) / (vn - 1 + K)
-    m = checked_merge(m, v1[["match_id", "venue_avg"]], "matches+venue average", on="match_id", how="left")
-    # matches not in the clean set: plain venue mean over clean matches, else tier mean
-    vmean = v1.groupby("venue_id").tot_1.mean()
-    tmean = v1.groupby("tier").tot_1.mean()
-    m["venue_avg"] = m.venue_avg.fillna(m.venue_id.map(vmean)).fillna(m.tier.map(tmean))
+    v1["venue_avg"] = (v1.venue_sum_prior.fillna(0) + K * tier_prior) / (v1.venue_n_prior.fillna(0) + K)
+    m = checked_merge(m, v1[["match_id", "venue_avg"]], "matches+past-only venue average", on="match_id", how="left")
+    # Non-clean matches are excluded downstream; use the last historical estimate only as a safe fallback.
+    vmean = v1.groupby("venue_id").venue_avg.mean()
+    tmean = v1.groupby("tier").venue_avg.mean()
+    m["venue_avg"] = m.venue_avg.fillna(m.venue_id.map(vmean)).fillna(m.tier.map(tmean)).fillna(150.0)
 
     # ---- attach match info to deliveries --------------------------------------------------
     keep = ["match_id", "comp_id", "match_date", "year", "tier", "venue_id", "venue_avg", "clean",
