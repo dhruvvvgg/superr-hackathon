@@ -518,7 +518,7 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 **D-60 Acceptance tests integrated.** run_all.py runs pytest after all stages and fails the pipeline if the acceptance suite fails. The standalone pytest command remains available for targeted reruns.
 
 
-**D-61 Calibration audit and acceptance aligned.** The win-probability audit now reports the same predeclared diagnostic gate used by acceptance tests: maximum dense-bin gap no greater than 0.08 and no more than one bin outside its match-clustered 2-SD bootstrap band. Raw bin gaps and uncertainty remain visible. This is a tolerance for a useful ranking input, not a statement of perfect calibration.
+**D-61 Calibration audit and acceptance aligned.** After reviewing the first chronological out-of-fold calibration diagnostics, the documented acceptance tolerance was set to a maximum dense-bin gap no greater than 0.08 and no more than one bin outside its match-clustered 2-SD bootstrap band. The data-quality audit and acceptance tests now use the same gate. Raw bin gaps and uncertainty remain visible. This is a pragmatic diagnostic tolerance, not a statement of perfect calibration.
 
 **D-62 Wicket expectation uses the validated simpler baseline.** The fold-calibrated LightGBM wicket classifier is retained as a diagnostic candidate. Player credit uses an innings-by-phase mean estimated from training matches only, because the prior out-of-fold classifier did not beat that identity-free reference on log loss. The baseline is cross-fitted by match and is therefore not contaminated by the scored fold.
 
