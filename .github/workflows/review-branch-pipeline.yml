@@ -1,4 +1,5 @@
 name: Review branch full pipeline
+# Trigger a fresh full validation after the chronological venue-prior fix.
 
 on:
   push:
