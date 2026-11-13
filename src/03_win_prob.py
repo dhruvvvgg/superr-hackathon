@@ -2,7 +2,7 @@
 
 Outputs
   data/interim/wp.parquet           wp_before (out-of-fold), fold id, comparison-model predictions
-  data/interim/wp_models.pkl        the five fold models (each never saw its own fold's matches)
+  data/interim/wp_models.pkl        warm-up cross-fit models plus forward-only temporal models (each never saw its own fold's matches)
   outputs/tables/wp_model_metrics.csv, outputs/figures/wp_calibration.png
 """
 import os
@@ -12,22 +12,21 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import log_loss, brier_score_loss
 
-from common import CFG, INTERIM, TABLES, FIGURES, SEED, save_table, setup_matplotlib
+from common import CFG, INTERIM, TABLES, FIGURES, SEED, save_table, setup_matplotlib, temporal_fold_map, train_mask_for_fold
 from wp_lib import WPModel, frame_from_balls
 
 
-def match_folds(match_ids, n_folds, seed):
-    u = np.sort(np.unique(match_ids))
-    rng = np.random.RandomState(seed)
-    perm = rng.permutation(len(u))
-    return dict(zip(u[perm], np.arange(len(u)) % n_folds))
+def match_folds(match_ids, match_dates, n_folds, seed):
+    return temporal_fold_map(match_ids, match_dates, n_warmup_folds=n_folds, n_test_folds=n_folds, seed=seed)
 
 
 def oof_predict(kind, F, y, fold, n_folds, rem, params=None, keep=False):
     pred = np.full(len(y), np.nan)
     models = []
-    for k in range(n_folds):
-        tr, te = fold != k, fold == k
+    for k in sorted(np.unique(fold)):
+        tr, te = train_mask_for_fold(fold, k), fold == k
+        if not tr.any() or not te.any():
+            raise ValueError(f"Empty train/test split for fold {k}")
         mdl = WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
         pred[te] = mdl.predict(F[te].reset_index(drop=True))
         models.append(mdl)
@@ -60,7 +59,7 @@ def main():
     F = frame_from_balls(b)
     y = b.bat_win.values.astype(int)
     n_folds = CFG["wp"]["n_folds"]
-    fmap = match_folds(b.match_id.values, n_folds, SEED)
+    fmap = match_folds(b.match_id.values, b.match_date.values, n_folds, SEED)
     fold = b.match_id.map(fmap).values
     # leakage guard: every match sits in exactly one fold
     assert b.groupby("match_id").apply(lambda d: 1, include_groups=False).shape[0] == len(fmap)
@@ -75,10 +74,12 @@ def main():
             preds[kind], _ = oof_predict(kind, F, y, fold, n_folds, rem)
     # state-free baseline: out-of-fold base rate by innings
     base = np.zeros(len(y))
-    for k in range(n_folds):
+    for k in sorted(np.unique(fold)):
+        tr_fold = train_mask_for_fold(fold, k)
         for inn in (1, 2):
-            tr = (fold != k) & (b.innings.values == inn)
-            base[(fold == k) & (b.innings.values == inn)] = y[tr].mean()
+            tr = tr_fold & (b.innings.values == inn)
+            te = (fold == k) & (b.innings.values == inn)
+            base[te] = y[tr].mean()
     preds["base_rate"] = base
 
     rows = []
@@ -141,7 +142,7 @@ def main():
         ax.set_xlim(0, 1); ax.set_ylim(0, 1)
     axes[0].set_ylabel("Observed win rate")
     axes[0].legend(loc="upper left", frameon=False)
-    fig.suptitle("Win-probability calibration, out-of-fold (5 folds grouped by match)")
+    fig.suptitle("Win-probability calibration, warm-up cross-fit plus 5 forward-only folds")
     fig.tight_layout()
     fig.savefig(os.path.join(FIGURES, "wp_calibration.png"))
     plt.close(fig)
@@ -153,7 +154,13 @@ def main():
         out[f"wp_{k}"] = preds[k]
     out.to_parquet(os.path.join(INTERIM, "wp.parquet"), index=False)
     with open(os.path.join(INTERIM, "wp_models.pkl"), "wb") as f:
-        pickle.dump(dict(models=models, fold_map=fmap, kind=primary), f)
+        fold_values = sorted(np.unique(fold).tolist())
+        train_max = {int(k): pd.to_datetime(b.loc[train_mask_for_fold(fold, k), "match_date"]).max().date().isoformat()
+                     for k in fold_values}
+        test_min = {int(k): pd.to_datetime(b.loc[fold == k, "match_date"]).min().date().isoformat()
+                    for k in fold_values}
+        pickle.dump(dict(models=models, fold_map=fmap, kind=primary, fold_values=fold_values,
+                         fold_train_max_date=train_max, fold_test_min_date=test_min), f)
 
     dq = pd.read_csv(os.path.join(TABLES, "data_quality.csv"))
     dq = dq[dq.stage != "03_win_prob"]

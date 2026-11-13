@@ -41,6 +41,31 @@ CFG = load_config()
 SEED = CFG["seed"]
 
 
+def temporal_fold_map(match_ids, match_dates, n_warmup_folds=5, n_test_folds=5, seed=SEED):
+    """Warm-up cross-fit folds followed by forward-only chronological test folds."""
+    m = pd.DataFrame({"match_id": np.asarray(match_ids), "match_date": pd.to_datetime(match_dates)})
+    m = m.drop_duplicates("match_id").sort_values(["match_date", "match_id"])
+    dates = np.sort(m.match_date.dt.normalize().unique())
+    if len(dates) <= n_test_folds:
+        raise ValueError("Not enough distinct match dates for chronological folds")
+    n_warm_dates = max(1, min(len(dates) - n_test_folds, int(np.ceil(len(dates) * 0.20))))
+    warm_dates, future_dates = dates[:n_warm_dates], dates[n_warm_dates:]
+    warm_ids = m.loc[m.match_date.dt.normalize().isin(warm_dates), "match_id"].to_numpy()
+    rng = np.random.RandomState(seed)
+    perm = rng.permutation(warm_ids)
+    out = {mid: -n_warmup_folds + (i % n_warmup_folds) for i, mid in enumerate(perm)}
+    for k, date_group in enumerate(np.array_split(future_dates, n_test_folds)):
+        ids = m.loc[m.match_date.dt.normalize().isin(date_group), "match_id"].to_numpy()
+        out.update({mid: k for mid in ids})
+    return out
+
+
+def train_mask_for_fold(fold, fold_id):
+    """Warm-up folds cross-fit against warm-up peers; later folds train on prior folds only."""
+    fold = np.asarray(fold)
+    return ((fold < 0) & (fold != fold_id)) if fold_id < 0 else (fold < fold_id)
+
+
 def raw(name):
     return pd.read_csv(os.path.join(RAW, f"{name}.csv"), low_memory=False)
 

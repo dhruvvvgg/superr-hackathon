@@ -13,7 +13,7 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-from common import CFG, INTERIM, SEED, save_table, checked_merge
+from common import CFG, INTERIM, SEED, save_table, checked_merge, train_mask_for_fold
 from res_lib import fit_resource, resource, wicket_value
 from wp_lib import TIER_CODE
 
@@ -35,7 +35,9 @@ PARAMS = dict(learning_rate=0.05, n_estimators=300, num_leaves=31, min_child_sam
 def oof(X, y, fold, objective, extra=None):
     pred = np.full(len(y), np.nan)
     for k in sorted(np.unique(fold)):
-        tr, te = fold != k, fold == k
+        tr, te = train_mask_for_fold(fold, k), fold == k
+        if not tr.any() or not te.any():
+            raise ValueError(f"Empty expected-value train/test split for fold {k}")
         p = dict(PARAMS, objective=objective, **(extra or {}))
         if objective == "binary":
             mdl = lgb.LGBMClassifier(**p).fit(X[tr], y[tr])
@@ -85,7 +87,19 @@ def main():
 
     # ---- resource table and wicket value (first innings of clean matches) -----------------------
     i1 = b.innings == 1
-    rp = fit_resource(b.balls_left[i1], b.wkts_before[i1], b.rem_runs[i1])
+    fold_values = sorted(b.fold.unique().tolist())
+    wkt_value = np.full(len(b), np.nan)
+    resource_models = {}
+    for k in fold_values:
+        tr = train_mask_for_fold(b.fold.values, k) & i1.values
+        te = (b.fold.values == k)
+        rp_k = fit_resource(b.balls_left.values[tr], b.wkts_before.values[tr], b.rem_runs.values[tr])
+        resource_models[k] = rp_k
+        wkt_value[te] = wicket_value(rp_k, b.balls_left.values[te], b.wkts_before.values[te])
+    if np.isnan(wkt_value).any():
+        raise AssertionError("Wicket values missing for one or more temporal folds")
+    # The final fold resource table is the latest historical fit; per-row values remain fold-specific.
+    rp = resource_models[max(fold_values)]
     grid = [(bl, w, resource(rp, bl, w), float(wicket_value(rp, bl, w)))
             for w in range(10) for bl in (120, 90, 60, 36, 24, 12, 6, 1)]
     emp = b[i1].groupby(["wkts_before", "balls_left"]).rem_runs.agg(["mean", "count"])
@@ -93,7 +107,7 @@ def main():
     rt["empirical_mean"] = [emp["mean"].get((w, bl), np.nan) for bl, w in zip(rt.balls_left, rt.wickets_lost)]
     rt["empirical_n"] = [emp["count"].get((w, bl), 0) for bl, w in zip(rt.balls_left, rt.wickets_lost)]
     save_table(rt, "resource_table.csv")
-    b["wkt_value"] = wicket_value(rp, b.balls_left.values, b.wkts_before.values)
+    b["wkt_value"] = wkt_value
     print(f"  wicket value (runs): mean {b.wkt_value.mean():.2f}, powerplay {b[b.phase == 'powerplay'].wkt_value.mean():.2f}, "
           f"death {b[b.phase == 'death'].wkt_value.mean():.2f}")
 
