@@ -183,6 +183,23 @@ def test_slots_equal_legal_balls(balls, bowl):
 
 
 
+def test_calibrated_expected_wicket_candidate_reuses_its_pilot_model(monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "expected_stage", os.path.join(ROOT, "src", "05_expected.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    pilot = object()
+    def unexpected_refit(*args, **kwargs):
+        raise AssertionError("calibrated pilot must be reused, not refit")
+    monkeypatch.setattr(module.lgb, "LGBMClassifier", unexpected_refit)
+    selected = module._binary_model_for_fold(
+        pilot, object(), np.zeros((2, 1)), np.array([0, 1]),
+        np.array([True, False]), {})
+    assert selected is pilot
+
+
 def test_expected_wicket_credit_uses_fold_local_phase_mean_baseline():
     metrics = T("expected_model_metrics.csv").set_index("model")
     bat_rows = pd.read_parquet(os.path.join(INTERIM, "bat_rows.parquet"))
