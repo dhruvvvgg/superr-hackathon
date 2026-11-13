@@ -46,7 +46,7 @@ def phase_mean_oof(y, fold, innings, phase):
         stats = (pd.DataFrame({"innings": innings[tr], "phase": phase[tr], "y": y[tr]})
                  .groupby(["innings", "phase"]).y.mean())
         keys = pd.MultiIndex.from_arrays([innings[te], phase[te]])
-        vals = stats.reindex(keys).to_numpy(dtype=float)
+        vals = stats.reindex(keys).to_numpy(dtype=float, copy=True)
         vals[~np.isfinite(vals)] = float(np.mean(y[tr]))
         pred[te] = vals
     if not np.isfinite(pred).all():
