@@ -380,8 +380,19 @@ def test_playing_eleven_anomalies_have_reconcilable_detail():
     duplicates = T("playing_eleven_duplicates.csv")
     integrity = T("audit_integrity.csv").set_index("check")
     assert int(missing.missing_striker_balls.sum()) == int(integrity.loc["striker absent from playing_eleven (info only)", "observed"])
+    assert missing.mapping_team_agrees.all()
+    assert int(integrity.loc["missing XI striker references unresolved by competition roster", "observed"]) == 0
     assert int(duplicates.groupby(["match_id", "team_id", "player_id"]).size().sub(1).sum()) == int(
         integrity.loc["duplicate rows in playing_eleven (info only)", "observed"])
+    assert int(integrity.loc["duplicate XI memberships assigned to multiple teams", "observed"]) == 0
+
+
+def test_source_edge_case_anomalies_have_row_level_audits():
+    integrity = T("audit_integrity.csv").set_index("check")
+    identity = T("striker_non_striker_identity_collisions.csv")
+    over_limit = T("bowler_over_limit.csv")
+    assert len(identity) == int(integrity.loc["striker equals non-striker (info only)", "observed"])
+    assert len(over_limit) == int(integrity.loc["bowler with more than 24 legal balls in an innings (info only)", "observed"])
 
 
 def test_temporal_validation_is_forward_only_at_rating_layer():
