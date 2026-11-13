@@ -41,6 +41,30 @@ def main():
     assert len(b) + len(so) == n_all
     assert not b.duplicated(["match_id", "innings", "innings_ball_num"]).any()
 
+    # Preserve any source over identifier before deriving the legal-ball over index.
+    source_over_col = next((c for c in ("over", "over_number", "over_num", "over_id") if c in b.columns), None)
+    if source_over_col is not None:
+        b["source_over"] = pd.to_numeric(b[source_over_col], errors="coerce")
+        print(f"  preserved source over field: {source_over_col}")
+
+    # Correct a verified ball-level identity error in the derived working copy only.
+    ball_identity_audit = []
+    for key, fix in CFG["source_overrides"].get("ball_identity_fixes", {}).items():
+        mid, inn_no, ball_no = (int(x) for x in key.split(":"))
+        sel = ((b.match_id == mid) & (b.innings == inn_no) & (b.innings_ball_num == ball_no))
+        assert int(sel.sum()) == 1, f"ball identity override {key} did not match exactly one delivery"
+        row = b.loc[sel].iloc[0]
+        assert int(row.striker_id) == int(fix["raw_striker_id"]), f"override {key} striker no longer matches source"
+        assert int(row.non_striker_id) == int(fix["raw_non_striker_id"]), f"override {key} non-striker no longer matches source"
+        b.loc[sel, "non_striker_id"] = int(fix["corrected_non_striker_id"])
+        ball_identity_audit.append(dict(match_id=mid, innings=inn_no, innings_ball_num=ball_no,
+                                        striker_id=int(row.striker_id),
+                                        raw_non_striker_id=int(row.non_striker_id),
+                                        corrected_non_striker_id=int(fix["corrected_non_striker_id"]),
+                                        evidence=fix["evidence"]))
+        print(f"  verified ball identity override applied: match {mid}, innings {inn_no}, ball {ball_no}")
+    save_table(pd.DataFrame(ball_identity_audit), "source_override_audit.csv")
+
     # ---- match table ----------------------------------------------------------------
     m = checked_merge(m, comp, "matches+competitions", on="comp_id", how="left", validate="m:1")
     pr = m.result.apply(parse_result)

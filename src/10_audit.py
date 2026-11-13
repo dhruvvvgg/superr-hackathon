@@ -134,6 +134,13 @@ def main():
     over_limit = over_limit[over_limit.legal_balls > 24].merge(
         player_map, on="player_id", how="left", validate="m:1")
     save_table(over_limit, "bowler_over_limit.csv")
+    over_keys = over_limit[["match_id", "innings", "player_id"]]
+    over_detail = bowl.merge(over_keys, on=["match_id", "innings", "player_id"], how="inner", validate="m:1")
+    detail_cols = [c for c in ["match_id", "match_date", "comp_id", "innings", "innings_ball_num",
+                               "over", "source_over", "player_id", "extras_type", "legal", "runs",
+                               "bowler_runs", "is_wicket", "dismissal_type"] if c in over_detail.columns]
+    over_detail = over_detail[detail_cols].merge(player_map, on="player_id", how="left", validate="m:1")
+    save_table(over_detail, "bowler_over_limit_deliveries.csv")
     print(it.to_string())
     save_table(it, "audit_integrity.csv")
     assert not (it.status == "FAIL").any()

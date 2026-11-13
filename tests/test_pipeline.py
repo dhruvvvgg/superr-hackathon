@@ -126,10 +126,15 @@ def test_no_match_scored_by_a_model_that_saw_it():
     audit = pd.DataFrame(pk["calibration_audit"])
     assert len(audit) == len(pk["fold_values"])
     assert (audit.calibration_matches <= audit.train_matches).all()
+    assert (audit.model_fit_matches + audit.calibration_matches == audit.train_matches).all()
     assert (audit.calibration_matches_outside_train == 0).all()
     assert (audit.calibration_matches_in_test == 0).all()
     forward_audit = audit[audit.fold >= 0]
     assert (forward_audit.future_calibration_matches == 0).all()
+    assert (pd.to_datetime(forward_audit.model_fit_max_date) <
+            pd.to_datetime(forward_audit.calibration_max_date)).all()
+    assert (pd.to_datetime(forward_audit.calibration_max_date) <
+            pd.to_datetime(forward_audit.test_min_date)).all()
     assert audit.calibrated_innings.eq("1;2").all()
     exported = T("wp_calibration_fold_audit.csv")
     assert len(exported) == len(audit)
@@ -400,12 +405,27 @@ def test_playing_eleven_anomalies_have_reconcilable_detail():
     assert int(integrity.loc["duplicate XI memberships assigned to multiple teams", "observed"]) == 0
 
 
+def test_verified_ball_identity_source_override_is_applied():
+    balls = pd.read_parquet(os.path.join(INTERIM, "balls.parquet"))
+    row = balls[(balls.match_id == 37086) & (balls.innings == 1) &
+                (balls.innings_ball_num == 111)].iloc[0]
+    assert int(row.striker_id) == 3550
+    assert int(row.non_striker_id) == 3543
+    overrides = T("source_override_audit.csv")
+    assert len(overrides) == 1
+    assert int(overrides.iloc[0].corrected_non_striker_id) == 3543
+    integrity = T("audit_integrity.csv").set_index("check")
+    assert int(integrity.loc["striker equals non-striker in clean matches", "observed"]) == 0
+
+
 def test_source_edge_case_anomalies_have_row_level_audits():
     integrity = T("audit_integrity.csv").set_index("check")
     identity = T("striker_non_striker_identity_collisions.csv")
     over_limit = T("bowler_over_limit.csv")
     assert len(identity) == int(integrity.loc["striker equals non-striker (info only)", "observed"])
     assert len(over_limit) == int(integrity.loc["bowler with more than 24 legal balls in an innings (info only)", "observed"])
+    over_detail = T("bowler_over_limit_deliveries.csv")
+    assert len(over_detail) == int(over_limit.legal_balls.sum())
 
 
 def test_temporal_validation_is_forward_only_at_rating_layer():

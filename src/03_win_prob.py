@@ -51,6 +51,7 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
         cal = tr & np.isin(match_ids, cal_matches)
         fit = tr & ~cal
         calibrators = {}
+        pilot = None
         if fit.any() and cal.any():
             pilot = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
             p_cal = np.clip(pilot.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
@@ -62,7 +63,9 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
                     calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
                     calibrator.fit(z, y[cm])
                     calibrators[inn] = calibrator
-        mdl = WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
+        # Keep the same base estimator that generated calibration predictions. Refitting on
+        # calibration matches shifts the score distribution and invalidates the learned mapping.
+        mdl = pilot if pilot is not None else WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
         mdl.calibrators = calibrators
         pred[te] = mdl.predict(F[te].reset_index(drop=True))
         models.append(mdl)
@@ -71,11 +74,12 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
         cal_dates = dates[cal]
         audit.append(dict(
             fold=int(k), kind="warmup_crossfit" if k < 0 else "forward_temporal",
-            train_matches=int(len(train_matches)), calibration_matches=int(len(cal_matches)),
-            test_matches=int(np.unique(match_ids[te]).size),
+            train_matches=int(len(train_matches)), model_fit_matches=int(np.unique(match_ids[fit]).size),
+            calibration_matches=int(len(cal_matches)), test_matches=int(np.unique(match_ids[te]).size),
             calibration_matches_outside_train=int(len(set(cal_matches) - set(train_matches))),
             calibration_matches_in_test=int(len(set(cal_matches) & set(np.unique(match_ids[te])))),
             train_max_date=pd.Timestamp(train_dates.max()).date().isoformat(),
+            model_fit_max_date=pd.Timestamp(dates[fit].max() if pilot is not None else train_dates.max()).date().isoformat(),
             calibration_max_date=pd.Timestamp(cal_dates.max()).date().isoformat(),
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
@@ -208,8 +212,7 @@ def main():
     out.to_parquet(os.path.join(INTERIM, "wp.parquet"), index=False)
     with open(os.path.join(INTERIM, "wp_models.pkl"), "wb") as f:
         fold_values = sorted(np.unique(fold).tolist())
-        train_max = {int(k): pd.to_datetime(b.loc[train_mask_for_fold(fold, k), "match_date"]).max().date().isoformat()
-                     for k in fold_values}
+        train_max = {int(r["fold"]): r["model_fit_max_date"] for r in calibration_audit}
         test_min = {int(k): pd.to_datetime(b.loc[fold == k, "match_date"]).min().date().isoformat()
                     for k in fold_values}
         pickle.dump(dict(models=models, fold_map=fmap, kind=primary, fold_values=fold_values,
