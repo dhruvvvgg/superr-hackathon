@@ -219,14 +219,15 @@ def main():
     A("## 5. Metrics, baselines and rating logic\n")
     A("**Units.** A batter's unit is a ball faced (any delivery that is not a wide). A bowler's unit is a "
       "legal-ball slot: one legal ball plus the wides and no-balls that preceded it.\n")
-    A("**Baselines without player identity** (`expected_model_metrics.csv`). Out-of-fold LightGBM models give "
-      "expected bat runs and dismissal probability per ball faced, and expected runs charged and wicket "
-      "probability per bowler slot. Features: innings, phase, balls left, wickets lost, current and required "
-      "rate and their gap, venue average, competition tier, pace or spin, bowling type, batter hand, no-ball and "
-      "free-hit flags"
+    A("**Baselines without player identity** (`expected_model_metrics.csv`). Expected bat and bowler runs "
+      "use out-of-fold LightGBM regressors. Expected wicket probability uses a fold-local innings/phase mean "
+      "estimated from training matches only. The calibrated LightGBM wicket classifier remains a diagnostic "
+      "candidate and is not used for player credit because the simpler reference is the selected baseline. "
+      "Run-model features: innings, phase, balls left, wickets lost, current and required rate and their gap, "
+      "venue average, competition tier, pace or spin, bowling type, batter hand, no-ball and free-hit flags"
       + (", plus balls already faced by the striker in the innings and his batting position (the role-aware "
          "baseline adopted in phase 2)" if role_aware else "") + ".\n")
-    A(md(em[em.metric.isin(["RMSE", "log loss"])][["model", "n", "metric", "oof", "phase_mean_baseline", "mean_actual", "mean_pred"]], 4) + "\n")
+    A(md(em[em.metric.isin(["RMSE", "log loss"])][["model", "n", "metric", "oof", "phase_mean_baseline", "mean_actual", "mean_pred", "selected_method"]], 4) + "\n")
     wv = res[(res.balls_left.isin([120, 60, 24])) & (res.wickets_lost.isin([0, 3, 6]))]
     A("**Wicket value in runs** (`resource_table.csv`). Expected remaining first-innings runs are fitted as "
       "R_w(b) = a_w (1 - exp(-b / t_w)) with a non-crossing penalty. The value of a wicket is the drop in "
