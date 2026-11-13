@@ -102,7 +102,8 @@ def main():
     rp = resource_models[max(fold_values)]
     grid = [(bl, w, resource(rp, bl, w), float(wicket_value(rp, bl, w)))
             for w in range(10) for bl in (120, 90, 60, 36, 24, 12, 6, 1)]
-    emp = b[i1].groupby(["wkts_before", "balls_left"]).rem_runs.agg(["mean", "count"])
+    latest_train = train_mask_for_fold(b.fold.values, max(fold_values))
+    emp = b[i1 & latest_train].groupby(["wkts_before", "balls_left"]).rem_runs.agg(["mean", "count"])
     rt = pd.DataFrame(grid, columns=["balls_left", "wickets_lost", "expected_remaining_runs", "wicket_value_runs"])
     rt["empirical_mean"] = [emp["mean"].get((w, bl), np.nan) for bl, w in zip(rt.balls_left, rt.wickets_lost)]
     rt["empirical_n"] = [emp["count"].get((w, bl), 0) for bl, w in zip(rt.balls_left, rt.wickets_lost)]

@@ -124,14 +124,15 @@ class Prep:
                 for k in folds:
                     te = self.fold == k
                     tr = train_mask_for_fold(self.fold, k)
-                    G, c = self.gram(w, tr)
+                    w_fold = w / max(float(w[tr].mean()), 1e-12)
+                    G, c = self.gram(w_fold, tr)
                     A = G.copy()
                     A[np.diag_indices_from(A)] += pen
                     beta = cho_solve(cho_factor(A, overwrite_a=True, check_finite=False), c,
                                      check_finite=False)
                     e = self.y[te] - self.X[te] @ beta
-                    sse += float(np.sum(w[te] * e * e))
-                    sw += float(w[te].sum())
+                    sse += float(np.sum(w_fold[te] * e * e))
+                    sw += float(w_fold[te].sum())
                 res.append(dict(lambda_main=lm, lambda_delta=ld, cv_wmse=sse / sw))
         tab = pd.DataFrame(res)
         # Reference baseline uses the same forward-only fold policy, without player/context terms.
@@ -140,10 +141,11 @@ class Prep:
         for k in folds:
             te = self.fold == k
             tr = train_mask_for_fold(self.fold, k)
-            A = (Z[tr] * w[tr, None]).T @ Z[tr] + 1e-6 * np.eye(4)
-            beta = np.linalg.solve(A, (Z[tr] * w[tr, None]).T @ self.y[tr])
+            w_fold = w / max(float(w[tr].mean()), 1e-12)
+            A = (Z[tr] * w_fold[tr, None]).T @ Z[tr] + 1e-6 * np.eye(4)
+            beta = np.linalg.solve(A, (Z[tr] * w_fold[tr, None]).T @ self.y[tr])
             e = self.y[te] - Z[te] @ beta
-            sse += float(np.sum(w[te] * e * e)); sw += float(w[te].sum())
+            sse += float(np.sum(w_fold[te] * e * e)); sw += float(w_fold[te].sum())
         tab["cv_wmse_no_player_terms"] = sse / sw
         best = tab.loc[tab.cv_wmse.idxmin()]
         return float(best.lambda_main), float(best.lambda_delta), tab

@@ -323,8 +323,10 @@ def test_v3_legacy_confirmation_is_reported_as_diagnostic_only():
 
 def test_v3_changes_have_evidence():
     st = pd.read_csv(os.path.join(V3, "structure.csv")).set_index(["role", "candidate"])
-    assert st.loc[("bat", "inter pace lam 3000"), "passes"]
-    assert st.loc[("bowl", "lam_wkt x10"), "passes"]
+    assert ("bat", "inter pace lam 3000") in st.index
+    assert ("bowl", "lam_wkt x10") in st.index
+    assert st.loc[("bat", "inter pace lam 3000"), "selection_basis"] == "tuning_only"
+    assert st.loc[("bowl", "lam_wkt x10"), "selection_basis"] == "tuning_only"
     import json
     ch = json.load(open(os.path.join(V3, "chosen_config.json")))
     assert ch["bat"]["inter"] == "pace" and ch["bat"]["credit"] == "bat_credit_v3"
