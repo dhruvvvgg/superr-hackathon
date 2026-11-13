@@ -82,6 +82,7 @@ class WPModel:
         self.models = {}
         self.res = None
         self.vmean = None
+        self.calibrators = {}
 
     # -- resource features -----------------------------------------------------------------
     def _res_feats(self, F, inn):
@@ -133,10 +134,23 @@ class WPModel:
             self.models[inn] = (mdl, cols)
         return self
 
+    def _apply_calibration(self, probabilities, innings):
+        """Apply fold-local Platt calibration, separately by innings."""
+        out = np.asarray(probabilities, dtype=float).copy()
+        innings = np.asarray(innings)
+        for inn, calibrator in self.calibrators.items():
+            mask = innings == inn
+            if mask.any():
+                p = np.clip(out[mask], 1e-5, 1 - 1e-5)
+                z = np.log(p / (1 - p)).reshape(-1, 1)
+                out[mask] = calibrator.predict_proba(z)[:, 1]
+        return np.clip(out, 1e-6, 1 - 1e-6)
+
     def predict(self, F):
         out = np.full(len(F), np.nan)
         if self.kind == "free":
-            return self.models[0].predict_proba(F[FEATS_FREE])[:, 1]
+            out = self.models[0].predict_proba(F[FEATS_FREE])[:, 1]
+            return self._apply_calibration(out, F.innings.values)
         for inn in (1, 2):
             msk = (F.innings == inn).values
             if msk.any():
@@ -148,7 +162,7 @@ class WPModel:
                     if self.kind == "logit":
                         X = X.fillna(0.0)
                 out[msk] = mdl.predict_proba(X)[:, 1]
-        return out
+        return self._apply_calibration(out, F.innings.values)
 
 
 def wp_states(model, innings, legal_before, score, wickets, target, r12, w12, dot, venue, tier):

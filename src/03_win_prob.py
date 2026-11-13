@@ -20,18 +20,66 @@ def match_folds(match_ids, match_dates, n_folds, seed):
     return temporal_fold_map(match_ids, match_dates, n_warmup_folds=n_folds, n_test_folds=n_folds, seed=seed)
 
 
-def oof_predict(kind, F, y, fold, n_folds, rem, params=None, keep=False):
+def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=None, keep=False):
+    """Out-of-fold predictions with per-innings Platt calibration.
+
+    For each fold, the calibrator is learned from a held-out subset of training matches.
+    Forward folds reserve the latest 20% of training matches for calibration; warm-up
+    peer folds use a deterministic grouped split. Neither the scored fold nor its labels
+    enter the base-model fit or calibration fit.
+    """
+    from sklearn.linear_model import LogisticRegression
+
     pred = np.full(len(y), np.nan)
     models = []
+    audit = []
+    match_ids = np.asarray(match_ids)
+    dates = pd.to_datetime(match_dates).to_numpy()
     for k in sorted(np.unique(fold)):
         tr, te = train_mask_for_fold(fold, k), fold == k
         if not tr.any() or not te.any():
             raise ValueError(f"Empty train/test split for fold {k}")
+        train_matches = np.unique(match_ids[tr])
+        if k >= 0:
+            md = pd.DataFrame({"match_id": match_ids[tr], "date": dates[tr]}).drop_duplicates("match_id")
+            ordered = md.sort_values(["date", "match_id"]).match_id.to_numpy()
+            cal_matches = ordered[-max(1, int(np.ceil(0.20 * len(ordered)))):]
+        else:
+            rng = np.random.RandomState(SEED + abs(int(k)))
+            shuffled = rng.permutation(train_matches)
+            cal_matches = shuffled[:max(1, int(np.ceil(0.20 * len(shuffled))))]
+        cal = tr & np.isin(match_ids, cal_matches)
+        fit = tr & ~cal
+        calibrators = {}
+        if fit.any() and cal.any():
+            pilot = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
+            p_cal = np.clip(pilot.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
+            z_cal = np.log(p_cal / (1 - p_cal)).reshape(-1, 1)
+            for inn in (1, 2):
+                cm = cal & (F.innings.values == inn)
+                if cm.sum() and np.unique(y[cm]).size == 2:
+                    z = z_cal[F[cal].innings.values == inn]
+                    calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                    calibrator.fit(z, y[cm])
+                    calibrators[inn] = calibrator
         mdl = WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
+        mdl.calibrators = calibrators
         pred[te] = mdl.predict(F[te].reset_index(drop=True))
         models.append(mdl)
-    return (pred, models) if keep else (pred, None)
-
+        train_dates = dates[tr]
+        test_dates = dates[te]
+        cal_dates = dates[cal]
+        audit.append(dict(
+            fold=int(k), kind="warmup_crossfit" if k < 0 else "forward_temporal",
+            train_matches=int(len(train_matches)), calibration_matches=int(len(cal_matches)),
+            test_matches=int(np.unique(match_ids[te]).size),
+            train_max_date=pd.Timestamp(train_dates.max()).date().isoformat(),
+            calibration_max_date=pd.Timestamp(cal_dates.max()).date().isoformat(),
+            test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
+            future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
+            calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
+        ))
+    return (pred, models, audit)
 
 def calib_table(p, y, innings, bins=20):
     rows = []
@@ -68,10 +116,12 @@ def main():
     preds = {}
     primary = CFG["wp"]["model"]
     rem = b.rem_runs.values
-    preds[primary], models = oof_predict(primary, F, y, fold, n_folds, rem, keep=True)
+    preds[primary], models, calibration_audit = oof_predict(
+        primary, F, y, fold, n_folds, rem, b.match_id.values, b.match_date.values, keep=True)
     for kind in ("respoly", "respoly_mom", "resz", "mono", "free", "logit"):
         if kind != primary:
-            preds[kind], _ = oof_predict(kind, F, y, fold, n_folds, rem)
+            preds[kind], _, _ = oof_predict(
+                kind, F, y, fold, n_folds, rem, b.match_id.values, b.match_date.values)
     # state-free baseline: out-of-fold base rate by innings
     base = np.zeros(len(y))
     for k in sorted(np.unique(fold)):
@@ -160,7 +210,8 @@ def main():
         test_min = {int(k): pd.to_datetime(b.loc[fold == k, "match_date"]).min().date().isoformat()
                     for k in fold_values}
         pickle.dump(dict(models=models, fold_map=fmap, kind=primary, fold_values=fold_values,
-                         fold_train_max_date=train_max, fold_test_min_date=test_min), f)
+                         fold_train_max_date=train_max, fold_test_min_date=test_min,
+                         calibration_audit=calibration_audit), f)
 
     dq = pd.read_csv(os.path.join(TABLES, "data_quality.csv"))
     dq = dq[dq.stage != "03_win_prob"]
