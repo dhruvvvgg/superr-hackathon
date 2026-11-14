@@ -91,7 +91,7 @@ def main():
         A(f"Figure: `v2_top10_{label}.png`.\n")
     A("## 2. The method in six steps\n")
     A("1. **Clean the ball data.** Legal deliveries (wides and every no-ball type excluded), runs reconstructed "
-      "for extras, super overs and rain-reduced matches removed, the chase target recovered exactly.")
+      "for extras, super overs and rain-reduced matches removed, the chase target reconstructed only from first-innings ball data.")
     A("2. **Win probability for every ball.** A logistic model on the resource-adjusted margin, scored out of "
       "fold so no match is rated by a model that saw it.")
     A("3. **Pressure is leverage.** For each ball, the expected absolute swing in win probability over everything "

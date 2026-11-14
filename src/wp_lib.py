@@ -135,7 +135,7 @@ class WPModel:
         return self
 
     def _apply_calibration(self, probabilities, innings):
-        """Apply fold-local Platt calibration, separately by innings."""
+        """Apply the fold-local, per-innings probability calibration mapping."""
         out = np.asarray(probabilities, dtype=float).copy()
         innings = np.asarray(innings)
         for inn, calibrator in self.calibrators.items():

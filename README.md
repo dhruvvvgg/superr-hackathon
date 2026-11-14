@@ -1,10 +1,12 @@
 # SupeRR Selector Season 2: pressure-player model for Rajasthan Royals
 
-A reproducible pipeline that defines T20 pressure from win-probability leverage and ranks players by
-leverage-weighted, opponent-adjusted performance relative to an identity-free expected-value baseline.
-Within-player pressure-versus-normal contrasts and pressure-innings dispersion are reported separately;
-they are descriptive diagnostics, not components of the V3 ranking. The model uses first-innings-only chase targets
-and strictly past-only expanding extras calibration to keep final-result information out of historical state features. The recommended final answer is `docs/V3_FINDINGS.md` (outputs in `outputs/v3/`). `docs/V2_FINDINGS.md` records the intermediate redesign. `docs/FINDINGS.md` is the full record of data preparation, validation and the earlier ratings. Every decision is logged in `docs/DECISIONS.md`.
+A reproducible pipeline that defines T20 pressure from win-probability leverage and produces a primary shortlist
+using the pre-registered four-component composite: pressure level, win-probability impact, consistency and
+pressure-versus-normal delta. The separate V3 Level-focused model is a predictive challenger, not the primary
+task ranking. Chase targets use first-innings-only reconstruction, and extras values use strictly past-only
+expanding calibration. The primary findings are in `docs/FINDINGS.md`; V3 challenger diagnostics are in
+`docs/V3_FINDINGS.md` (outputs in `outputs/v3/`). `docs/V2_FINDINGS.md` records the intermediate redesign.
+Every decision is logged in `docs/DECISIONS.md`.
 
 ## Run
 

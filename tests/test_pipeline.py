@@ -250,7 +250,9 @@ def test_top10_players_meet_eligibility(label):
     t = T(f"top10_{label}s.csv")
     e = CFG["eligibility"]
     pre = "bat" if label == "batter" else "bowl"
+    min_innings = e[f"{pre}_min_pressure_{'innings' if pre == 'bat' else 'spells'}"]
     assert (t.n_press_balls >= e[f"{pre}_min_pressure_balls"]).all()
+    assert (t.n_press_innings >= min_innings).all()
     assert (t.n_total_balls >= e["min_total_balls"]).all()
 
 
@@ -293,23 +295,27 @@ def test_no_ai_attribution_in_commit_messages():
 
 
 # ---- phase 3 ----------------------------------------------------------------------------------------
-def test_rating_is_the_documented_phase3_choice():
+def test_rating_uses_the_preregistered_task_composite():
     w = CFG["composite_weights"]
-    assert w["level"] == 1.0 and w["impact"] == w["consistency"] == w["delta"] == 0.0
+    spec = CFG["composite_weights_spec"]
+    assert w == spec == {"level": 0.40, "impact": 0.25, "consistency": 0.20, "delta": 0.15}
+    assert abs(sum(w.values()) - 1.0) < 1e-9
     assert CFG["ridge"]["lev_alpha"] == 1.0
-    assert abs(sum(CFG["composite_weights_spec"].values()) - 1.0) < 1e-9
 
 
-@pytest.mark.parametrize("role", ["bat", "bowl"])
-def test_adopted_rating_beats_spec_composite_on_heldout_prediction(role):
-    t = T("phase3_final_candidates.csv")
-    t = t[t.role == role].set_index("candidate")
-    assert t.loc["lev-level a=1", "d_nrae_vs_spec"] > 2 * t.loc["lev-level a=1", "d_nrae_se"]
-    assert t.loc["lev-level a=1", "pred_nrae"] > t.loc["spec composite (phase 1-2)", "pred_nrae"]
-    tt = T("phase3_temporal.csv").query("role == @role").set_index("candidate").pred_nrae_2025_26
-    # The chosen candidate wins on pooled held-out data, but one recent temporal
-    # window is mixed. Guard against material deterioration, not a guaranteed win.
-    assert tt["lev-level a=1"] >= tt["spec composite (phase 1-2)"] - 0.01
+@pytest.mark.parametrize("label", ["batter", "bowler"])
+def test_primary_rating_is_the_weighted_sum_of_all_four_components(label):
+    ratings = T(f"{label}_ratings.csv")
+    expected = sum(CFG["composite_weights"][component] * ratings[f"z_{component}"]
+                   for component in ("level", "impact", "consistency", "delta"))
+    assert np.allclose(ratings.rating, expected, atol=1e-5)
+
+
+def test_v3_predictive_challenger_is_reported_separately():
+    comparison = pd.read_csv(os.path.join(V3, "final_comparison.csv"))
+    assert set(comparison.role) == {"bat", "bowl"}
+    assert set(comparison.trials) == {"tuning trials", "confirmation trials"}
+    assert np.isfinite(comparison.gain).all()
 
 
 def test_earlier_results_are_preserved():

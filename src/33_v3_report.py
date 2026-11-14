@@ -78,10 +78,11 @@ def main():
 
     L = []; A = L.append
     A("# Final model (V3): who delivers under pressure\n")
-    A("This is the recommended candidate model. It is V2 (`docs/V2_FINDINGS.md`) extended with a pace interaction "
-      "for batters and stronger shrinkage of the wicket component for bowlers. Candidate adoption is based on "
-      "the tuning trials only (paired z > 2). The legacy confirmation trials are shown as diagnostics, not as "
-      "an untouched holdout: earlier V3 iterations used them for candidate gating. All tables are in `outputs/v3/`.\n")
+    A("This is an exploratory predictive challenger, not the primary auction shortlist. It extends V2 with a "
+      "pace interaction for batters and stronger shrinkage of the wicket component for bowlers. Candidate choices "
+      "were gated on tuning trials only; the legacy confirmation trials are descriptive because earlier V3 "
+      "iterations used them for candidate gating. The primary task ranking remains the pre-registered four-part "
+      "composite in `docs/FINDINGS.md`. All challenger tables are in `outputs/v3/`.\n")
     A("## 1. Result\n")
     A("Rating: leverage-weighted, opponent-adjusted NRAE per 100 balls, shrunk toward average for small samples. "
       "It estimates overall performance on high-leverage deliveries relative to an identity-free expected-value "

@@ -15,8 +15,6 @@ STAGES = ["01_profile", "02_build_state", "03_win_prob", "04_pressure", "05_expe
 # tag: (overrides, first stage that must be re-run, tag to copy earlier stages from, reason)
 VARIANTS = {
     "base": ({}, "01", None, "phase 1 primary specification"),
-    "target_recon": ({"target_mode": "reconstructed"}, "01", None,
-                     "handover target: reconstructed first-innings total + 1 instead of result-anchored"),
     "wp_gbm": ({"wp.model": "mono"}, "03", "base", "originally pre-registered monotone LightGBM win-probability model"),
     "wp_nomom": ({"wp.model": "respoly"}, "03", "base", "win probability without momentum features"),
     "lev_rms": ({"leverage.kind": "rms"}, "04", "base", "leverage as root-mean-square swing instead of mean absolute swing"),

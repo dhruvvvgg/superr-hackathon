@@ -1,11 +1,11 @@
-"""V3 stage C: final ratings.
+"""V3 stage C: exploratory predictive-challenger ratings.
 
 Batters: richer-baseline credit (bat_credit_v3), V2 settings plus a shrunk pace-versus-spin adjustment.
 Bowlers: main credit, V2 settings with the wicket part of NRAE shrunk ten times harder than the runs part.
 Candidate adoption is based on tuning trials only (paired z > 2). Legacy confirmation results are descriptive
 only because earlier V3 iterations used them for gating; they are not an untouched holdout.
-Rating = shrunk, opponent-adjusted, leverage-weighted NRAE per 100 balls. Eligibility as in V2.
-Output: outputs/v3/ratings_*.csv, top10_*.csv, chosen_config.json
+Rating = shrunk, opponent-adjusted, leverage-weighted NRAE per 100 balls. This challenger uses a 40-ball minimum; primary shortlist eligibility is defined separately by config.json.
+Output: outputs/v3/ratings_*.csv, top10_*.csv, chosen_config.json (not the primary task shortlist).
 """
 import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")

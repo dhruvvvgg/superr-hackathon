@@ -80,7 +80,7 @@ def main():
     A = L.append
 
     A("# FINDINGS: who delivers under pressure\n")
-    A("> **Superseded for the final lists.** The recommended final answer is `docs/V3_FINDINGS.md`. This document "
+    A("> **Primary task ranking.** The final shortlist follows the pre-registered four-component composite. "
       "remains the full record of the data preparation, validation, audit and the earlier ratings; "
       "`docs/V2_FINDINGS.md` records the intermediate redesign.\n")
     A("Every number below is read from a file in `outputs/tables/` when the pipeline runs "
@@ -260,13 +260,11 @@ def main():
         "sits at the largest value in the grid: the data contain very little information about individual "
         "pressure deltas.\n")
     WS = CFG["composite_weights_spec"]
-    A("**The rating (adopted in phase 3, post-hoc change P-2).** The rating is the leverage-weighted level: "
-      "the ridge estimate of a player's NRAE per 100 balls in which every ball is weighted by its leverage "
-      f"(weight = leverage to the power {CFG['ridge'].get('lev_alpha', 0):g}, normalised), so a ball that can move the match "
-      "counts more than a ball that cannot, with no cutoff. It is opponent-adjusted by the same ridge and "
-      "standardised among eligible players. The four-part composite of the specification is still computed and "
-      "reported (`z_` columns) but carries no weight in the rating, because on held-out data its extra parts "
-      "did not predict anything (section \"What changed in phase 3\").\n")
+    A("**Primary rating.** The shortlist uses the pre-registered composite: 40% leverage-weighted, "
+      "opponent-adjusted pressure level; 25% shrunk win-probability impact; 20% beta-binomial-shrunk consistency; "
+      "and 15% shrunk pressure-versus-normal delta. Each component is standardised among eligible players before "
+      "combination. A separate Level-focused V3 model is retained as a predictive challenger in "
+      "`docs/V3_FINDINGS.md`; it does not redefine the task objective or primary shortlist.\n")
     A("| Component | Spec weight | Rating weight | Definition |\n|---|---|---|---|")
     A(f"| Level | {WS['level']:.2f} | {W['level']:.2f} | ridge estimate, NRAE per 100 balls, opponent-adjusted; leverage-weighted in the rating |")
     A(f"| Impact | {WS['impact']:.2f} | {W['impact']:.2f} | pressure WPA per 100 balls, empirical Bayes shrinkage with match-clustered errors |")
@@ -425,9 +423,10 @@ def main():
     A("## 10. Limitations and where the model is least certain\n")
     A("- **Low persistence.** See section 8. The rating has limited repeatability and the pressure-specific "
       "components have almost none.")
-    A(f"- **Extras reconstruction.** Bye and leg-bye run values are not stored. Innings totals carry a mean error "
-      f"of about {ex['margin MAE (runs), fitted']:.1f} runs with a long tail. The chase target is anchored to the "
-      "result so the end of a chase is exact, but first-innings scores and early-chase required rates are not.")
+    A("- **Extras and target reconstruction.** The chase target uses only first-innings ball data and is "
+      "therefore available before the chase. Incomplete extras fields leave residual score reconstruction error "
+      f"(strictly out-of-time margin MAE {ex['margin MAE (runs), fitted']:.1f} runs). Neither final chase totals "
+      "nor result margins are used to repair the target.")
     A("- **Small pressure samples.** The pressure sample is a fifth of the data. A typical eligible batter has "
       f"{int(rb.n_press_balls.median())} pressure balls (median) and a typical bowler {int(rw.n_press_balls.median())}.")
     A("- **Selection into high-leverage states.** Good teams reach close finishes more often and choose who "
@@ -464,8 +463,9 @@ def main():
     A("- The ridge and empirical Bayes estimators agree on the composite but only moderately on Level "
       "(section 5). Restricting to one competition changes the lists: top-10 overlap with the primary is "
       + "; ".join(f"{r.config}, {r.role}s {r.top10_overlap_with_primary} of 10" for r in io.itertuples()) + ".")
-    A("- The fitted extras values improve on the 1-run rule by a few hundredths of a run. The calibration "
-      "is reported because it was required, not because it matters much.")
+    A("- **Extras calibration.** Per-match coefficients are estimated from strictly earlier matches only. "
+      "The fixed one-run-per-extra fallback is used before enough history exists; see the out-of-time comparison "
+      "in `extras_calibration.csv` rather than treating the in-sample fit as evidence.")
     A("- Several of the highest-volume death-over players rank poorly (section 7). The model may be right, or "
       "the baseline may still be unfair to their role. This was not adjusted by hand.\n")
 
@@ -590,10 +590,11 @@ def main():
       "random splits, not that this exact variant is the optimum. The absolute correlations are small (batters "
       "about 0.06, bowlers about 0.14): pressure performance is only weakly predictable from past pressure "
       "performance, so every ranking here, old or new, is a noisy estimate.\n")
-    A("**Adopted (post-hoc change P-2).** The rating is the leverage-weighted level (weight = leverage, "
-      "power 1) with eligibility, opponent adjustment and all other parts unchanged. Impact, consistency and "
-      "delta stay in the tables as descriptive columns and as sensitivity configurations. The pre-registered "
-      "composite is kept as the `spec weights` configuration in the sensitivity grid and in `outputs/phase2/`.\n")
+    A("**Predictive challenger, not the primary task ranking.** Phase 3 explored a Level-focused score with "
+      "leverage weighting because it performed better on some held-out predictive comparisons. Its temporal "
+      "results are mixed and pressure-specific consistency/delta are not reliably persistent. It remains a "
+      "separate challenger in `outputs/v3/`. The primary shortlist and Rajasthan Royals fit use the "
+      "pre-registered four-component composite above, not this post-hoc alternative.\n")
     sc2 = sc[sc.config.isin(["no leverage weighting", "leverage weight power 0.5", "leverage weight power 2", "spec weights 0.40/0.25/0.20/0.15"])]
     A("How much the lists depend on this choice (`sensitivity_configs.csv`, top-10 overlap with the final lists):\n")
     A(md(sc2[["role", "config", "n_eligible", "top10_overlap_with_primary", "spearman_with_primary"]]) + "\n")

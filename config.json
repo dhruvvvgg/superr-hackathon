@@ -89,10 +89,10 @@
     "lev_alpha": 1
   },
   "composite_weights": {
-    "level": 1,
-    "impact": 0,
-    "consistency": 0,
-    "delta": 0
+    "level": 0.4,
+    "impact": 0.25,
+    "consistency": 0.2,
+    "delta": 0.15
   },
   "eligibility": {
     "bat_min_pressure_balls": 60,

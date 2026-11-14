@@ -1,4 +1,4 @@
-"""V3 RR fit: reuse the established RR fit logic with the final V3 ratings and credit tables."""
+"""Exploratory V3 challenger RR fit; the primary auction analysis uses stage 09 and the task composite."""
 import importlib.util
 import os
 
@@ -18,7 +18,7 @@ def main():
         bat_credit_name="bat_credit_v3",
         bowl_credit_name="bowl_credit",
         figure_path=os.path.join(ROOT, "outputs", "v3", "rr_gap.png"),
-        label="V3",
+        label="V3 predictive challenger",
     )
 
 
