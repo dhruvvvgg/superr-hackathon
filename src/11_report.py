@@ -180,21 +180,18 @@ def main():
       "string. One result string was wrong: match 20190 (LSG v SRH, 7 April 2023) says 6 wickets, while the ball "
       "data and five outside scorecards show LSG won by 5 wickets with 127/5. It is corrected by a documented "
       "override in `config.json` (DECISIONS.md, D-24). This check does not depend on extras.")
-    A(f"- **Extras calibration** (`extras_calibration.csv`). Fitted run values: wide {ex['run value: wide']:.2f}, "
-      f"no-ball {ex['run value: Overstep']:.2f}, other no-ball {ex['run value: other']:.2f}, leg bye "
-      f"{ex['run value: legbyes']:.2f}, bye {ex['run value: byes']:.2f}. On {int(T('extras_calibration.csv').set_index('item').n['margin MAE (runs), fitted'])} "
-      f"clean run-margin matches the mean absolute error of the reconstructed margin is "
-      f"{ex['margin MAE (runs), fitted']:.2f} runs (1-run rule {ex['margin MAE (runs), simple']:.2f}; out of sample "
-      f"{ex['margin MAE (runs), fitted, 5-fold out of sample']:.2f}). The margin is exact in "
-      f"{100 * ex['exact-margin rate, simple']:.0f}% of matches with the 1-run rule and within 2 runs in "
-      f"{100 * ex['within 2 runs rate, fitted']:.0f}% with the fitted values. The fitted values barely beat the "
-      "1-run rule: the residual error is not about the average value of an extra, it is unrecorded bye and "
-      "leg-bye runs and occasional missing deliveries.")
-    A(f"- **Why the target is anchored to the result.** In "
-      f"{100 * ex['wicket-win chases: share with reconstructed total below reconstructed target']:.0f}% of chases won "
-      "by wickets the reconstructed chasing total is still below the reconstructed target at the end. The chase "
-      "target is therefore recovered from the result string (DECISIONS.md, D-07). Required-rate features early in a "
-      "chase still carry the reconstruction error of roughly 2 runs per innings.")
+    A(f"- **Extras calibration** (\`extras_calibration.csv\`). Per-match values are estimated only from clean "
+      f"run-margin matches on strictly earlier dates; the first 40 eligible historical matches use the fixed "
+      f"1-run-per-extra fallback. Median applied values were wide {ex['run value: wide']:.2f}, no-ball "
+      f"{ex['run value: Overstep']:.2f}, other no-ball {ex['run value: other']:.2f}, leg bye "
+      f"{ex['run value: legbyes']:.2f}, bye {ex['run value: byes']:.2f}. Strictly out-of-time reconstructed "
+      f"margin MAE was {ex['margin MAE (runs), fitted']:.2f} runs versus {ex['margin MAE (runs), simple']:.2f} "
+      f"for the fixed 1-run rule. Residual error remains because bye and leg-bye run detail is absent from the "
+      "supplied data and occasional deliveries may be missing. No same-match or future result is used to price "
+      "an extra in the scored match.")
+    A("- **Chase target.** The target is the rounded first-innings reconstructed total plus one. Result strings, "
+      "final chase totals, run margins and wickets remaining are never used to set it. Required-rate features "
+      "therefore carry reconstruction error from the incomplete extras data.")
     excl = dq[dq.check.str.startswith("matches excluded")][["check", "observed"]]
     A(f"- **Exclusions.** {'; '.join(f'{c.replace('matches excluded: ', '')}: {int(float(o))}' for c, o in zip(excl.check, excl.observed))}. "
       f"Clean matches kept: {int(float(dqv('clean matches kept')))}. Super-over deliveries dropped: 38.")

@@ -42,18 +42,12 @@ have margin errors of 8 to 10 runs from causes other than extras and they domina
 also guarantees an in-sample error no worse than the 1-run rule, which is a feasible point. The penalty row
 is fixed at 5 runs. `extras_2_runs` is added on top.
 
-**D-07 Chase target is anchored to the result (differs from the handover).** The handover says to use the
-reconstructed first-innings total plus 1 as the target. Evidence from stage 02, before any model existed:
-the reconstruction error is about 2 runs per innings on average but with a long tail, and in 42% of
-chases won by wickets the reconstructed chasing total is still below the reconstructed target when the
-match ends. A target that is wrong by a few runs matters most exactly where pressure is highest, the last
-overs of a close chase. The true target is public before the chase starts and can be recovered from the
-result string: for "won by N runs" it is chasing total + N + 1; for "won by N wickets" it lies between the
-score before the last ball + 1 and the final total, and the reconstructed value is clipped into that range;
-for ties it is the chasing total + 1. This uses the result only to remove measurement error in a quantity
-that was known during the match, so it is not outcome leakage. `config.json` keeps `target_mode` so the
-reconstructed version can be run for comparison, and phase 2 reports the out-of-fold log loss of both.
-Rejected: reconstructed target only.
+**D-07 Chase target uses only first-innings reconstruction.** The target supplied to chase-state features
+is the rounded reconstructed first-innings total plus one. It is not recovered or clipped from the final
+score, run margin, wickets remaining, winner, or result string. This can introduce measurement error because
+extras are incompletely represented in the source data, but it preserves the chronology of the feature:
+the target is fixed before the second innings begins. Result-anchored target reconstruction is rejected
+because it imports final-match information into an input used to predict the match outcome.
 
 **D-08 Wicket check.** Wickets lost in the chase equal 10 minus N in 418 of 419 "won by N wickets"
 matches. The exception is match 20190 (IPL 2023, LSG v SRH), where the ball data shows 5 wickets and the
@@ -509,7 +503,7 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 
 **D-56 Objective stated precisely.** The V3 rating is leverage-weighted, opponent-adjusted NRAE per 100 balls with shrinkage. It estimates overall high-leverage performance relative to the identity-free baseline; it is not a causal within-player pressure uplift and does not optimise consistency. Raw pressure-minus-normal strike-rate/economy contrasts and pressure-innings NRAE dispersion are exposed as descriptive diagnostics, not ranking inputs. The prior tests of consistency and delta components remain documented in D-31 to D-35.
 
-**D-57 Result-anchored target provenance made inspectable.** Stage 02 now exports per-match reconstructed and result-anchored targets, target source, and adjustment magnitude, plus a grouped audit table. The target is a match condition known before the chase; the pipeline reconstructs its historical value from the result where necessary. This is not a player-outcome feature, but it remains an outcome-informed reconstruction and must be sensitivity-tested. The existing anchored-versus-reconstructed WP and persistence comparison is therefore retained. Wicket-win target bounds remain approximate when the exact target is not in the supplied data.
+**D-57 Superseded: result-anchored targets removed.** Result-derived target reconstruction was removed from the state pipeline. The only chase target now used by WP, required-rate and pressure features is the rounded first-innings ball-data total plus one. The row-level audit contains no final innings total, result margin, wicket margin or winner-derived adjustment.
 
 **D-58 Upstream features and rating validation made chronological.** The pipeline now uses a 20% chronological warm-up period, internally cross-fitted by match, followed by five forward-only folds. WP models, expected-value models, fold-specific outcome frequencies for leverage, pressure percentile references, resource/wicket values, venue averages, and ridge penalty CV use only warm-up or earlier-date data when scoring each later fold. The temporal validation stage then fits V3 on pre-cutoff matches and scores the next six/seven months. This is an end-to-end chronological feature-generation and rating-fit check after the warm-up period. The validation windows remain diagnostic rather than a pristine final holdout because V3 development has already examined overlapping historical periods; future matches are still needed for independent prospective confirmation.
 
@@ -528,3 +522,6 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 **D-64 Verified ball-level batter identity correction.** Match 37086 (Afghanistan A vs Sri Lanka A, 18 October 2024), innings 1, delivery 111 (18.3), records Sharafuddin Ashraf as both striker and non-striker. Cricbuzz commentary records Zubaid Akbari's run-out at 17.5, then Ashraf batting with Shahidullah Kamal and facing the 18.3 delivery. The competition roster maps Shahidullah Kamal to player_id 3543. Stage 02 changes only the derived working copy's non-striker ID from 3550 to 3543, guarded by assertions on the raw values and exact delivery key. The raw CSV is unchanged. Evidence: https://www.cricbuzz.com/player-match-performance/match/107585/player/9854/batting?inningsId=1
 
 **D-65 Expected-wicket calibration isolation.** The diagnostic LightGBM wicket classifier estimates its calibration map from a held-out subset of each training fold. The scored predictions now reuse the exact pilot estimator that generated those calibration scores; refitting on the full training fold would shift the score distribution and invalidate the map. When no calibrator can be estimated, the candidate is fit on the full training fold without a calibration map. Player credit continues to use the validated fold-local innings/phase mean baseline.
+
+
+**D-66 Strictly past-only extras calibration.** The previous full-sample extras fit used winning margins from all clean matches to estimate the run value of each extra, then applied those values to earlier and later matches alike. This allowed future outcomes to influence historical match state. Stage 02 now estimates per-type values on clean run-margin matches from strictly earlier dates only; matches played on the same date share a parameter vintage. Before 40 prior calibration matches exist, it uses the fixed one-run-per-extra assumption. Every match's method, training count, latest training date and coefficients are exported to \`outputs/tables/extras_calibration_by_match.csv\`. The out-of-time margin comparison is diagnostic and does not use a same-match or future result to construct that match's feature values.
