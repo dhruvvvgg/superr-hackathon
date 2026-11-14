@@ -1,8 +1,8 @@
 """V2 stage B: final ratings from the configuration chosen in stage A.
 
-Rating = shrunk, opponent-adjusted, leverage-weighted NRAE per 100 balls (units: runs per 100 balls above an
-average player in the same situation). Ranking among eligible players, with a match-cluster bootstrap for
-rank and rating intervals.
+Rating = the forward-window-selected score variant: shrunk, opponent-adjusted leverage-weighted NRAE,
+WPA, or the selected standardised NRAE/WPA blend. Blend scores are unitless. Ranking uses the common
+eligible-player universe, with a match-cluster bootstrap for rank and rating intervals.
 
 Eligibility: at least 40 pressure balls (the same bar used in the validation trials), at least 150 balls in
 total, and at least one appearance in 2025 or 2026.

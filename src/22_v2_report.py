@@ -34,6 +34,17 @@ def main():
 
     # ---- figures ---------------------------------------------------------------------------------
     for label, color in [("batters", "#1f6fb2"), ("bowlers", "#2a9d8f")]:
+        role = "bat" if label == "batters" else "bowl"
+        score = chosen[role]["score"]
+        if score == "nrae":
+            score_label = "Shrunk pressure NRAE (runs per 100 balls)"
+        elif score == "wpa":
+            score_label = "Shrunk win-probability impact (per 100 balls)"
+        elif score.startswith("blend"):
+            beta = float(score.replace("blend", ""))
+            score_label = f"Standardised NRAE + {beta:g} x standardised WPA (unitless)"
+        else:
+            raise ValueError(f"Unknown selected V2 score: {score}")
         t = top[label].iloc[::-1]
         fig, ax = plt.subplots(figsize=(9, 5.5))
         ax.barh(t.player_name, t.rating, color=color, alpha=0.85)
@@ -41,7 +52,7 @@ def main():
                     fmt="none", ecolor="black", capsize=4, lw=1.4)
         for y_, (r_, p_) in enumerate(zip(t.boot_rating_p90, t.boot_top10_prob)):
             ax.text(r_ + 0.3, y_, f"P(top 10) {p_:.2f}", va="center", fontsize=10)
-        ax.set_xlabel("Runs per 100 balls above an average player in the same situation (80% bootstrap interval)")
+        ax.set_xlabel(f"{score_label} (80% bootstrap interval)")
         ax.set_title(f"V2: top 10 {label} under pressure")
         ax.set_xlim(0, t.boot_rating_p90.max() * 1.35)
         fig.tight_layout(); fig.savefig(os.path.join(OUT, f"v2_top10_{label}.png")); plt.close(fig)
@@ -61,8 +72,9 @@ def main():
     # ---- document ----------------------------------------------------------------------------------
     L = []; A = L.append
     A("# V2: a fresh build of the pressure rating\n")
-    A("> **Superseded.** The final model is V3 (`docs/V3_FINDINGS.md`), which improves this design on the same "
-      "held-out trials. This document is kept as the record of the V2 redesign.\n")
+    A("> **Exploratory predictive challenger.** V2 is a predictive-model comparison, not the primary "
+      "task-specific shortlist. V3 contains later challenger experiments; neither replaces the four-component "
+      "primary ranking in `docs/FINDINGS.md`. This document records the V2 design and its diagnostics.\n")
     A("This is an independent second design, made from the six supplied CSVs and the problem statement only. "
       "The ball-level preparation (legal balls, extras, match state, out-of-fold win probability, expected "
       "runs and wickets) is reused from `docs/FINDINGS.md` because it is data engineering that was checked "
@@ -70,10 +82,11 @@ def main():
       "one question: **which method best predicts a player's future performance when the match is on the "
       "line?** Every table is in `outputs/v2/`, produced by `src/20_v2_search.py`, `21_v2_rate.py` and `22_v2_report.py`.\n")
     A("## 1. Result\n")
-    A("Rating is runs per 100 balls above an average player in the same situation (same phase, wickets, "
-      "required rate, bowler type, venue), measured with every ball weighted by how much it can move the match, "
-      "adjusted for the opponents faced and shrunk toward the average for small samples. The interval is the 80% "
-      "interval over 1,000 resamples of matches.\n")
+    A("The selected V2 score is applied exactly as chosen by the forward-window search. NRAE and WPA are "
+      "reported as shrunk per-100-ball components; when a blend is selected, both components are standardised "
+      "over the registered eligible player universe and combined using the selected coefficient. Blend ratings "
+      "are unitless, not runs per 100 balls. Intervals are 80% match-cluster bootstrap intervals from 1,000 "
+      "resamples.\n")
     for label in ("batters", "bowlers"):
         t = top[label]
         A(f"### Top 10 {label} (`top10_{label}.csv`)\n")
