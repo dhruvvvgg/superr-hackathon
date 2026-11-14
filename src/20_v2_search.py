@@ -1,17 +1,15 @@
-"""V2 stage A: choose the design options of the rating by how well they predict FUTURE pressure performance,
-without fitting noise.
+"""V2 stage A: choose rating options using forward-only evidence about FUTURE pressure performance.
 
-Evidence trials (one trial = fit on training matches, score against held-out pressure performance):
-  tuning:        5 rolling windows (train before T, test the next 6 months, T = 2023-04, 2023-10, 2024-04,
-                 2024-10, 2025-04) plus 20 random half splits of the matches (seed A, both directions)
-  confirmation:  2 later rolling windows (2025-10 to 2026-04, 2026-04 to 2026-11) plus 20 random half splits
-                 (seed B). Never used to choose anything.
+Each trial trains only on matches strictly before a cutoff and scores the following six months.
+Tuning uses five rolling windows (2023-04 through 2025-04); confirmation uses two later windows
+(2025-10 and 2026-04). Random half-sample splits are excluded from model selection because they can
+train on future matches relative to the scored matches.
 
-Adoption rule: start from a stated reference. Move an option away from the reference only if the paired
-difference in the objective (mean of the NRAE-target and WPA-target correlations) is more than 2 standard
-errors across the tuning trials. Otherwise keep the reference. This is what stops the search from fitting noise.
+Adoption rule: start from a stated reference. Move an option only if the paired difference in the
+mean NRAE-target/WPA-target correlation exceeds two standard errors across the tuning windows.
+Confirmation windows are diagnostics only and never choose a configuration.
 
-Output: outputs/v2/search_log.csv, confirm.csv, chosen_config.json
+Outputs include search_log.csv, confirm.csv, validation_audit.csv and chosen_config.json.
 """
 import os
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -20,12 +18,11 @@ import json
 import numpy as np
 import pandas as pd
 
-from common import PROCESSED, ROOT, SEED
-from v2_lib import eval_fold, eval_split
+from common import PROCESSED, ROOT
+from v2_lib import eval_fold
 
 OUT = os.path.join(ROOT, "outputs", "v2")
 os.makedirs(OUT, exist_ok=True)
-ANCHOR = pd.Timestamp("2026-11-01")
 TUNE_CUTS = ["2023-04-01", "2023-10-01", "2024-04-01", "2024-10-01", "2025-04-01"]
 CONF_CUTS = [("2025-10-01", 6), ("2026-04-01", 7)]
 REFERENCE = dict(half_life=24.0, alpha=1.0, assoc_w=0.5, lam=3000.0, role_prior=False, opp_adjust=True)
@@ -47,32 +44,38 @@ def raw_scores(tr, role, st):
     return out
 
 
-def split_sets(mids, n, seed):
-    rng = np.random.RandomState(seed)
-    out = []
-    for _ in range(n):
-        perm = rng.permutation(len(mids))
-        a = set(mids[perm[: len(mids) // 2]])
-        b = set(mids) - a
-        out += [a, b]
-    return out
-
-
 def trials(df, role, cfg, kind, extra=None):
-    """list of result dicts. kind: 'tune' or 'conf'."""
-    mids = np.sort(df.match_id.unique())
-    res = []
-    if kind == "tune":
-        for c in TUNE_CUTS:
-            res.append(eval_fold(df, role, c, 6, cfg, extra_scores=extra, min_test=20))
-        for s in split_sets(mids, 10, SEED + 11):
-            res.append(eval_split(df, role, s, cfg, ANCHOR, extra_scores=extra))
-    else:
-        for c, m in CONF_CUTS:
-            res.append(eval_fold(df, role, c, m, cfg, extra_scores=extra, min_test=20))
-        for s in split_sets(mids, 10, SEED + 29):
-            res.append(eval_split(df, role, s, cfg, ANCHOR, extra_scores=extra))
-    return res
+    """Return only chronological forward-window trials; never train on a later match."""
+    cuts = [(c, 6) for c in TUNE_CUTS] if kind == "tune" else CONF_CUTS
+    return [eval_fold(df, role, c, months, cfg, extra_scores=extra, min_test=20)
+            for c, months in cuts]
+
+
+def temporal_audit(df, role):
+    """Auditable dates and match counts for every tuning and confirmation window."""
+    dates = pd.to_datetime(df.match_date)
+    rows = []
+    windows = [("tuning", c, 6) for c in TUNE_CUTS] + [
+        ("confirmation", c, months) for c, months in CONF_CUTS
+    ]
+    for kind, cut_text, months in windows:
+        cut = pd.Timestamp(cut_text)
+        end = cut + pd.DateOffset(months=months)
+        train = dates < cut
+        test = (dates >= cut) & (dates < end)
+        train_dates, test_dates = dates[train], dates[test]
+        if not train.any() or not test.any():
+            raise ValueError(f"{role} {kind} window {cut_text} has an empty train or test set")
+        future = int(df.loc[train & (dates >= test_dates.min()), "match_id"].nunique())
+        if future:
+            raise AssertionError(f"{role} {cut_text}: training contains future matches")
+        rows.append(dict(role=role, kind=kind, cutoff=cut_text, test_end=end.date().isoformat(),
+                         train_matches=int(df.loc[train, "match_id"].nunique()),
+                         test_matches=int(df.loc[test, "match_id"].nunique()),
+                         train_max_date=train_dates.max().date().isoformat(),
+                         test_min_date=test_dates.min().date().isoformat(),
+                         future_train_matches=future))
+    return rows
 
 
 def vec(res, score="nrae"):
@@ -82,8 +85,9 @@ def vec(res, score="nrae"):
 def main():
     print("V2 stage A: search with a 2-standard-error adoption rule")
     data = {r: pd.read_parquet(os.path.join(PROCESSED, f)) for r, f in [("bat", "bat_credit.parquet"), ("bowl", "bowl_credit.parquet")]}
-    log, chosen = [], {}
+    log, chosen, audit_rows = [], {}, []
     for role, df in data.items():
+        audit_rows.extend(temporal_audit(df, role))
         cfg = dict(REFERENCE)
         ref_vec = vec(trials(df, role, cfg, "tune"))
         for key, values in GRID:
@@ -120,6 +124,7 @@ def main():
         chosen[role] = dict(cfg=cfg, score=score)
     json.dump(chosen, open(os.path.join(OUT, "chosen_config.json"), "w"), indent=1, default=str)
     pd.DataFrame(log).to_csv(os.path.join(OUT, "search_log.csv"), index=False, float_format="%.5f")
+    pd.DataFrame(audit_rows).to_csv(os.path.join(OUT, "validation_audit.csv"), index=False)
 
     rows = []
     for role, df in data.items():

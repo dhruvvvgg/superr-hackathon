@@ -1,7 +1,7 @@
 """V3 experiments: structural model variants and ensembles, judged on the same held-out trials as V2.
 
-Every candidate is scored on tuning and legacy confirmation trials (defined in 20_v2_search.py).
-Paired differences are reported against the V2 configuration. Adoption uses tuning trials only (> 2 SE).
+Every candidate is scored on forward-only tuning and confirmation windows defined in 20_v2_search.py.
+Paired differences are reported against the V2 configuration. Adoption uses tuning windows only (> 2 SE).
 The legacy confirmation trials are descriptive diagnostics, not an untouched holdout: earlier V3 iterations
 used them for candidate gating, so they must not be presented as independent final validation.
 Usage: python src/30_v3_experiments.py <round_name> ; candidates are defined per round below.
@@ -18,7 +18,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from common import PROCESSED, ROOT, SEED
+from common import PROCESSED, ROOT
 from v2_lib import pressure_stats, wspearman
 from v3_lib import fit3
 
@@ -30,17 +30,23 @@ _G = {}
 
 
 def trial_sets(df):
-    """list of (kind, train_mask, test_mask, anchor, min_test)."""
-    mids = np.sort(df.match_id.unique())
+    """Forward-only trial windows matching the V2 tuning and confirmation periods."""
     dd = pd.to_datetime(df.match_date)
     out = []
-    for kind, cuts, seed in [("tune", [(c, 6) for c in s20.TUNE_CUTS], SEED + 11), ("conf", s20.CONF_CUTS, SEED + 29)]:
-        for c, m in cuts:
-            cut = pd.Timestamp(c)
-            out.append((kind, (dd < cut).values, ((dd >= cut) & (dd < cut + pd.DateOffset(months=m))).values, cut, 20))
-        for s in s20.split_sets(mids, 10, seed):
-            tr = df.match_id.isin(s).values
-            out.append((kind, tr, ~tr, s20.ANCHOR, 25))
+    windows = [("tune", c, 6) for c in s20.TUNE_CUTS] + [
+        ("conf", c, months) for c, months in s20.CONF_CUTS
+    ]
+    for kind, cut_text, months in windows:
+        cut = pd.Timestamp(cut_text)
+        train = (dd < cut).values
+        test = ((dd >= cut) & (dd < cut + pd.DateOffset(months=months))).values
+        if not train.any() or not test.any():
+            raise ValueError(f"{kind} temporal window {cut_text} has an empty train or test set")
+        train_dates = pd.to_datetime(df.loc[train, "match_date"])
+        test_dates = pd.to_datetime(df.loc[test, "match_date"])
+        if train_dates.max() >= test_dates.min():
+            raise AssertionError(f"{kind} temporal window {cut_text} contains future training data")
+        out.append((kind, train, test, cut, 20))
     return out
 
 

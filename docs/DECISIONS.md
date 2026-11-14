@@ -536,3 +536,6 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 
 
 **D-70 Eligibility thresholds are never relaxed to satisfy a pool-size target.** The primary ranking uses the pressure balls, pressure innings/spells, total-ball and recency thresholds registered in `config.json`. If fewer than the configured minimum pool qualify, the pipeline stops and reports that conflict rather than silently lowering the thresholds. The exported ratings table and tests verify all included players against every registered threshold.
+
+
+**D-71 V2/V3 model selection is forward-only.** The earlier V2 search mixed five chronological six-month windows with twenty random half-sample splits in both directions. The random splits could train on matches later than the test matches and were therefore unsuitable for selecting a model intended to predict future performance. They are removed from both V2 and V3 trial generation. V2 writes a row-level `validation_audit.csv` with train/test date boundaries and future-training counts; V3 trial files carry the same dates and a temporal flag. Acceptance tests require strictly increasing train/test chronology for every tuning and confirmation trial. Confirmation windows remain diagnostic and are not used for adoption.

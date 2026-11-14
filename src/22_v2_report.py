@@ -105,9 +105,10 @@ def main():
     A("6. **Choose every design option by prediction, not by taste.** See the next section.\n")
     A("## 3. How the design was chosen\n")
     A("Each trial fits the rating on part of the data and measures how well it predicts the same players' "
-      "pressure performance in data it never saw, using weighted rank correlation. Tuning used 5 rolling "
-      "forward-in-time windows plus 20 random half splits (25 trials). A separate set of 22 trials "
-      "(2 later time windows plus 20 other random splits) was never used to choose anything.\n")
+      "pressure performance in data it never saw, using weighted rank correlation. Tuning used five "
+      "forward-only six-month windows; confirmation used two later forward-only windows and was not used "
+      "to choose anything. Random half-sample splits were excluded because they can train on matches later "
+      "than the scored matches. The window-by-window chronology is recorded in `outputs/v2/validation_audit.csv`.\n")
     A("**Adoption rule.** An option moves away from the reference setup only if it is better by more than two "
       "standard errors of the paired difference across the tuning trials. A first attempt without this rule "
       "(3 folds, free coordinate search) overfit: it scored 0.03 and -0.02 on later data against 0.24 and 0.08 "

@@ -379,6 +379,18 @@ def test_v2_beats_naive_statistics_on_confirmation_trials():
         assert d.loc["v2 chosen", "objective"] >= d.loc["reference", "objective"] - 1e-9
 
 
+def test_v2_search_uses_only_forward_temporal_windows():
+    audit = pd.read_csv(os.path.join(V2, "validation_audit.csv"))
+    assert len(audit) == 14
+    counts = audit.groupby(["role", "kind"]).size().to_dict()
+    assert counts == {
+        ("bat", "confirmation"): 2, ("bat", "tuning"): 5,
+        ("bowl", "confirmation"): 2, ("bowl", "tuning"): 5
+    }
+    assert audit.future_train_matches.eq(0).all()
+    assert (pd.to_datetime(audit.train_max_date) < pd.to_datetime(audit.test_min_date)).all()
+
+
 def test_v2_adoption_rule_respected():
     log = pd.read_csv(os.path.join(V2, "search_log.csv"))
     chosen = pd.read_json(os.path.join(V2, "chosen_config.json"))
@@ -413,6 +425,16 @@ def test_v3_top10_lists(label):
     assert (t.rating.values[:-1] >= t.rating.values[1:]).all()
     assert np.allclose(full.rating, full.runs_part + full.wicket_part, atol=1e-3)  # CSV keeps 6 significant figures
     assert full.boot_rating_p10.notna().all() and (full.boot_rating_p10 <= full.boot_rating_p90).all()
+
+
+def test_v3_candidate_trials_are_forward_only():
+    trial_files = [f for f in os.listdir(V3) if f.startswith("_trials_") and f.endswith(".csv")]
+    assert trial_files
+    for filename in trial_files:
+        t = pd.read_csv(os.path.join(V3, filename))
+        assert t.temporal.astype(bool).all(), filename
+        assert (pd.to_datetime(t.train_max_date) < pd.to_datetime(t.test_min_date)).all(), filename
+        assert set(t.kind) == {"tune", "conf"}, filename
 
 
 def test_v3_legacy_confirmation_is_reported_as_diagnostic_only():
