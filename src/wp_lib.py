@@ -135,14 +135,15 @@ class WPModel:
         return self
 
     def _apply_calibration(self, probabilities, innings):
-        """Apply the fold-local, per-innings probability calibration mapping."""
+        """Apply fold-local Platt calibration, separately by innings."""
         out = np.asarray(probabilities, dtype=float).copy()
         innings = np.asarray(innings)
         for inn, calibrator in self.calibrators.items():
             mask = innings == inn
             if mask.any():
                 p = np.clip(out[mask], 1e-5, 1 - 1e-5)
-                out[mask] = calibrator.predict(p)
+                z = np.log(p / (1.0 - p)).reshape(-1, 1)
+                out[mask] = calibrator.predict_proba(z)[:, 1]
         return np.clip(out, 1e-6, 1 - 1e-6)
 
     def predict(self, F):

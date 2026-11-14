@@ -108,11 +108,16 @@ def test_wp_calibration_is_within_diagnostic_tolerance():
     primary = m[(m.role == "primary") & (m["sample"] == "all")].iloc[0]
     bins = T("wp_calibration_bins.csv")
     assert primary.max_calib_gap_dense_bins <= 0.08
+    broad = bins[bins.n >= 2500]
+    assert broad.abs_gap.max() <= 0.12
     assert int((~bins.gap_within_2sd).sum()) <= 1
+    assert int((~broad.gap_within_2sd).sum()) <= 3
     quality = T("data_quality.csv")
     gate = quality[quality.check.isin([
         "maximum dense-bin calibration gap <= 0.08",
-        "no more than one bin outside match-bootstrap 2-SD band"
+        "no more than one bin outside match-bootstrap 2-SD band",
+        "calibration gap <= 0.12 in bins with at least 2500 balls",
+        "no more than three bins with at least 2500 balls outside match-bootstrap 2-SD band"
     ])]
     assert len(gate) == 2 and gate.status.eq("pass").all()
 
@@ -142,7 +147,7 @@ def test_no_match_scored_by_a_model_that_saw_it():
     assert (pd.to_datetime(forward_audit.calibration_max_date) <
             pd.to_datetime(forward_audit.test_min_date)).all()
     assert audit.calibrated_innings.eq("1;2").all()
-    assert audit.calibration_method.eq("match_weighted_isotonic").all()
+    assert audit.calibration_method.eq("match_weighted_platt").all()
     exported = T("wp_calibration_fold_audit.csv")
     assert len(exported) == len(audit)
     assert (exported.calibration_matches_in_test == 0).all()
@@ -339,6 +344,25 @@ def test_v2_top10_lists(label):
     assert full.player_id.is_unique and (full.n_press_balls >= 40).all() and (full.n_total_balls >= 150).all()
     assert (t.rating.values[:-1] >= t.rating.values[1:]).all()
     assert (t.boot_rating_p10 <= t.rating).all() and (t.rating <= t.boot_rating_p90).all()
+
+
+@pytest.mark.parametrize("label,role", [("batters", "bat"), ("bowlers", "bowl")])
+def test_v2_final_rating_applies_the_selected_score_variant(label, role):
+    chosen = json.load(open(os.path.join(V2, "chosen_config.json")))[role]
+    ratings = pd.read_csv(os.path.join(V2, f"ratings_{label}.csv"))
+    assert ratings.rating_score.eq(chosen["score"]).all()
+    if chosen["score"] == "nrae":
+        expected = ratings.nrae_per100_shrunk
+    elif chosen["score"] == "wpa":
+        expected = ratings.wpa_per100_shrunk
+    elif chosen["score"].startswith("blend"):
+        beta = float(chosen["score"].replace("blend", ""))
+        z_n = (ratings.nrae_per100_shrunk - ratings.nrae_per100_shrunk.mean()) / ratings.nrae_per100_shrunk.std()
+        z_w = (ratings.wpa_per100_shrunk - ratings.wpa_per100_shrunk.mean()) / ratings.wpa_per100_shrunk.std()
+        expected = z_n + beta * z_w
+    else:
+        raise AssertionError(f"Unsupported V2 score: {chosen['score']}")
+    assert np.allclose(ratings.rating, expected, atol=1e-5)
 
 
 def test_v2_beats_naive_statistics_on_confirmation_trials():

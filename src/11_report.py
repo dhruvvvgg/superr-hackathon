@@ -185,10 +185,11 @@ def main():
       f"1-run-per-extra fallback. Median applied values were wide {ex['run value: wide']:.2f}, no-ball "
       f"{ex['run value: Overstep']:.2f}, other no-ball {ex['run value: other']:.2f}, leg bye "
       f"{ex['run value: legbyes']:.2f}, bye {ex['run value: byes']:.2f}. Strictly out-of-time reconstructed "
-      f"margin MAE was {ex['margin MAE (runs), fitted']:.2f} runs versus {ex['margin MAE (runs), simple']:.2f} "
-      f"for the fixed 1-run rule. Residual error remains because bye and leg-bye run detail is absent from the "
-      "supplied data and occasional deliveries may be missing. No same-match or future result is used to price "
-      "an extra in the scored match.")
+      f"for the fixed 1-run rule; RMSE was {ex['margin RMSE (runs), fitted']:.2f} versus "
+      f"{ex['margin RMSE (runs), simple']:.2f}. The MAE is essentially unchanged and slightly worse under the "
+      "fitted coefficients, while RMSE is lower; this is a mixed diagnostic, not evidence of a universal "
+      "accuracy gain. Residual error remains because bye and leg-bye run detail is absent from the supplied data "
+      "and occasional deliveries may be missing. No same-match or future result is used to price an extra.")
     A("- **Chase target.** The target is the rounded first-innings reconstructed total plus one. Result strings, "
       "final chase totals, run margins and wickets remaining are never used to set it. Required-rate features "
       "therefore carry reconstruction error from the incomplete extras data.")

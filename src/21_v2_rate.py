@@ -28,12 +28,30 @@ MIN_PRESS, MIN_TOTAL = 40, 150
 _G = {}
 
 
+def score_values(res, score):
+    """Apply the exact score variant selected by stage 20 to a fixed player universe."""
+    q = res
+    if score == "nrae":
+        return q.s_nrae.to_numpy(dtype=float)
+    if score == "wpa":
+        return q.s_wpa.to_numpy(dtype=float)
+    if score.startswith("blend"):
+        beta = float(score.replace("blend", ""))
+        sd_n = float(q.s_nrae.std())
+        sd_w = float(q.s_wpa.std())
+        if sd_n <= 0 or sd_w <= 0:
+            raise ValueError("Cannot blend V2 scores with zero cross-player variance")
+        return ((q.s_nrae - q.s_nrae.mean()) / sd_n +
+                beta * (q.s_wpa - q.s_wpa.mean()) / sd_w).to_numpy(dtype=float)
+    raise ValueError(f"Unsupported V2 score variant: {score}")
+
+
 def _boot(i):
     df, role, cfg, mids = _G["df"], _G["role"], _G["cfg"], _G["mids"]
     rng = np.random.RandomState(SEED + 5000 + i)
     mult = np.bincount(rng.randint(0, len(mids), len(mids)), minlength=len(mids))
-    r = fit(df, role, ANCHOR, mult=mult, **cfg).set_index("player_id").s_nrae
-    return r.reindex(_G["ids"]).values
+    r = fit(df, role, ANCHOR, mult=mult, **cfg).set_index("player_id")
+    return score_values(r.loc[_G["ids"]], _G["score"])
 
 
 def main():
@@ -45,7 +63,7 @@ def main():
     for role, fname, label in [("bat", "bat_credit", "batters"), ("bowl", "bowl_credit", "bowlers")]:
         df = pd.read_parquet(os.path.join(PROCESSED, f"{fname}.parquet"))
         cfg = chosen[role]["cfg"]
-        assert chosen[role]["score"] == "nrae", "final rating assumes the NRAE score"
+        score = chosen[role]["score"]
         res = fit(df, role, ANCHOR, **cfg).set_index("player_id")
         unit = df.faced if role == "bat" else pd.Series(1, index=df.index)
         press = df.pA.astype(bool)
@@ -56,12 +74,14 @@ def main():
                          & recent.reindex(res.index).fillna(False)]
         print(f"  {label}: {len(res)} players, {len(elig)} eligible")
         ids = np.sort(np.array(elig))
-        _G.update(df=df, role=role, cfg=cfg, mids=np.sort(df.match_id.unique()), ids=ids)
+        _G.update(df=df, role=role, cfg=cfg, score=score, mids=np.sort(df.match_id.unique()), ids=ids)
         with mp.get_context("fork").Pool(4) as pool:
             B = np.array(pool.map(_boot, range(N_BOOT), chunksize=25))
         rk = (-B).argsort(axis=1).argsort(axis=1) + 1
         t = pd.DataFrame({"player_id": ids})
-        t["rating"] = res.loc[ids, "s_nrae"].values
+        t["rating"] = score_values(res.loc[ids], score)
+        t["rating_score"] = score
+        t["nrae_per100_shrunk"] = res.loc[ids, "s_nrae"].values
         t["rank"] = t.rating.rank(ascending=False, method="first").astype(int)
         t["boot_rating_p10"] = np.nanpercentile(B, 10, axis=0)
         t["boot_rating_p90"] = np.nanpercentile(B, 90, axis=0)

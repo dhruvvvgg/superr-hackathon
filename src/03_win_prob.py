@@ -21,14 +21,14 @@ def match_folds(match_ids, match_dates, n_folds, seed):
 
 
 def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=None, keep=False):
-    """Out-of-fold predictions with match-weighted, per-innings isotonic calibration.
+    """Out-of-fold predictions with match-weighted, per-innings Platt calibration.
 
     Calibration is learned from held-out training matches. Every match receives equal total
     calibration weight, preventing long matches from dominating the mapping. Forward folds
     reserve the latest 20% of training matches; warm-up folds use a deterministic peer split.
     Neither the scored fold nor its labels enter either fit.
     """
-    from sklearn.isotonic import IsotonicRegression
+    from sklearn.linear_model import LogisticRegression
 
     pred = np.full(len(y), np.nan)
     models = []
@@ -55,6 +55,7 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
         if fit.any() and cal.any():
             pilot = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
             p_cal = np.clip(pilot.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
+            z_cal = np.log(p_cal / (1.0 - p_cal)).reshape(-1, 1)
             cal_innings = F.loc[cal, "innings"].to_numpy()
             cal_ids = match_ids[cal]
             cal_y = y[cal]
@@ -64,9 +65,11 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
                     ids_inn = cal_ids[im]
                     counts = pd.Series(ids_inn).value_counts()
                     match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
-                    calibrator = IsotonicRegression(y_min=1e-4, y_max=1 - 1e-4, out_of_bounds="clip")
-                    calibrator.fit(p_cal[im], cal_y[im], sample_weight=match_weights)
-                    calibrators[inn] = calibrator
+                    match_weights *= len(match_weights) / match_weights.sum()
+                    calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                    calibrator.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
+                    if float(calibrator.coef_[0, 0]) > 0:
+                        calibrators[inn] = calibrator
         # Keep the same base estimator that generated calibration predictions. Refitting on
         # calibration matches shifts the score distribution and invalidates the learned mapping.
         mdl = pilot if pilot is not None else WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
@@ -88,7 +91,7 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
             calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
-            calibration_method="match_weighted_isotonic",
+            calibration_method="match_weighted_platt",
         ))
     return (pred, models, audit)
 
@@ -229,6 +232,9 @@ def main():
     pm = met[(met.model == primary) & (met["sample"] == "all")].iloc[0]
     bm = met[(met.model == "base_rate") & (met["sample"] == "all")].iloc[0]
     outside = int((~ct.gap_within_2sd).sum())
+    broad = ct[ct.n >= 2500]
+    broad_max_gap = float(broad.abs_gap.max())
+    broad_outside = int((~broad.gap_within_2sd).sum())
     acc = [dict(stage="03_win_prob", check="out-of-fold log loss beats state-free baseline",
                 claimed=round(bm.log_loss, 4), observed=round(pm.log_loss, 4),
                 status="pass" if pm.log_loss < bm.log_loss else "FAIL", note="lower is better"),
@@ -239,6 +245,14 @@ def main():
            dict(stage="03_win_prob", check="no more than one bin outside match-bootstrap 2-SD band",
                 claimed=1, observed=outside, status="pass" if outside <= 1 else "FAIL",
                 note=f"10 equal-width bins per innings; {outside} of {len(ct)} bins outside band"),
+           dict(stage="03_win_prob", check="calibration gap <= 0.12 in bins with at least 2500 balls",
+                claimed=0.12, observed=round(broad_max_gap, 4),
+                status="pass" if broad_max_gap <= 0.12 else "FAIL",
+                note="guards against large gaps in material probability bins below the 5000-ball dense-bin cut"),
+           dict(stage="03_win_prob", check="no more than three bins with at least 2500 balls outside match-bootstrap 2-SD band",
+                claimed=3, observed=broad_outside,
+                status="pass" if broad_outside <= 3 else "FAIL",
+                note=f"{broad_outside} of {len(broad)} bins with n>=2500 outside band"),
            dict(stage="03_win_prob", check="every match scored by a model that did not see it",
                 claimed=True, observed=True, status="pass", note="warm-up peer cross-fit plus five forward-only chronological folds")]
     save_table(pd.concat([dq, pd.DataFrame(acc)], ignore_index=True), "data_quality.csv")
