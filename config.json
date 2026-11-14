@@ -46,7 +46,7 @@
     "2025": 2725,
     "2026": 3298
   },
-  "target_mode": "result_anchored",
+  "target_mode": "first_innings_reconstructed",
   "wp": {
     "n_folds": 5,
     "model": "respoly_mom"

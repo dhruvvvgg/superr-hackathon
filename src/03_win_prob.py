@@ -21,14 +21,14 @@ def match_folds(match_ids, match_dates, n_folds, seed):
 
 
 def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=None, keep=False):
-    """Out-of-fold predictions with per-innings Platt calibration.
+    """Out-of-fold predictions with match-weighted, per-innings isotonic calibration.
 
-    For each fold, the calibrator is learned from a held-out subset of training matches.
-    Forward folds reserve the latest 20% of training matches for calibration; warm-up
-    peer folds use a deterministic grouped split. Neither the scored fold nor its labels
-    enter the base-model fit or calibration fit.
+    Calibration is learned from held-out training matches. Every match receives equal total
+    calibration weight, preventing long matches from dominating the mapping. Forward folds
+    reserve the latest 20% of training matches; warm-up folds use a deterministic peer split.
+    Neither the scored fold nor its labels enter either fit.
     """
-    from sklearn.linear_model import LogisticRegression
+    from sklearn.isotonic import IsotonicRegression
 
     pred = np.full(len(y), np.nan)
     models = []
@@ -55,13 +55,17 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
         if fit.any() and cal.any():
             pilot = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
             p_cal = np.clip(pilot.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
-            z_cal = np.log(p_cal / (1 - p_cal)).reshape(-1, 1)
+            cal_innings = F.loc[cal, "innings"].to_numpy()
+            cal_ids = match_ids[cal]
+            cal_y = y[cal]
             for inn in (1, 2):
-                cm = cal & (F.innings.values == inn)
-                if cm.sum() and np.unique(y[cm]).size == 2:
-                    z = z_cal[F[cal].innings.values == inn]
-                    calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
-                    calibrator.fit(z, y[cm])
+                im = cal_innings == inn
+                if im.sum() and np.unique(cal_y[im]).size == 2 and np.unique(cal_ids[im]).size >= 10:
+                    ids_inn = cal_ids[im]
+                    counts = pd.Series(ids_inn).value_counts()
+                    match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
+                    calibrator = IsotonicRegression(y_min=1e-4, y_max=1 - 1e-4, out_of_bounds="clip")
+                    calibrator.fit(p_cal[im], cal_y[im], sample_weight=match_weights)
                     calibrators[inn] = calibrator
         # Keep the same base estimator that generated calibration predictions. Refitting on
         # calibration matches shifts the score distribution and invalidates the learned mapping.
@@ -84,6 +88,7 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
             calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
+            calibration_method="match_weighted_isotonic",
         ))
     return (pred, models, audit)
 
