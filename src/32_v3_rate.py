@@ -19,6 +19,7 @@ import pandas as pd
 from common import PROCESSED, ROOT, SEED, raw, player_names
 from ratings_lib import describe, latest_teams
 from v3_lib import fit3
+from v2_lib import rating_eligible_ids
 
 OUT = os.path.join(ROOT, "outputs", "v3")
 ANCHOR = pd.Timestamp("2026-11-01")
@@ -55,9 +56,9 @@ def main():
         n_press = unit[press].groupby(df.player_id[press]).sum()
         n_total = unit.groupby(df.player_id).sum()
         recent = (df.year.isin([2025, 2026]) & (unit > 0)).groupby(df.player_id).any()
-        ok = (n_press.reindex(res.index).fillna(0) >= MIN_PRESS) & (n_total.reindex(res.index).fillna(0) >= MIN_TOTAL) \
-            & recent.reindex(res.index).fillna(False)
-        ids = np.sort(np.array(res.index[ok]))
+        ids = np.sort(np.asarray(res.index.intersection(
+            rating_eligible_ids(df, role, ANCHOR, min_press=MIN_PRESS, min_total=MIN_TOTAL)
+        )))
         print(f"  {label}: {len(res)} players, {len(ids)} eligible")
         _G.update(df=df, role=role, cfg=cfg, mids=np.sort(df.match_id.unique()), ids=ids)
         with mp.get_context("fork").Pool(4) as pool:

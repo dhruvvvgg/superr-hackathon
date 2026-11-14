@@ -440,6 +440,18 @@ def test_v3_top10_lists(label):
     assert full.boot_rating_p10.notna().all() and (full.boot_rating_p10 <= full.boot_rating_p90).all()
 
 
+@pytest.mark.parametrize("label,role,file", [
+    ("batters", "bat", "bat_credit_v3.parquet"),
+    ("bowlers", "bowl", "bowl_credit.parquet")
+])
+def test_v3_final_eligibility_matches_model_selection_policy(label, role, file):
+    from v2_lib import rating_eligible_ids
+    df = pd.read_parquet(os.path.join(PROCESSED, file))
+    expected = set(rating_eligible_ids(df, role, pd.Timestamp("2026-11-01")))
+    ratings = pd.read_csv(os.path.join(V3, f"ratings_{label}.csv"))
+    assert set(ratings.player_id) == expected
+
+
 def test_v3_candidate_trials_are_forward_only():
     trial_files = [f for f in os.listdir(V3) if f.startswith("_trials_") and f.endswith(".csv")]
     assert trial_files

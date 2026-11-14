@@ -542,3 +542,6 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 
 
 **D-72 V2 search and final scoring use the same player universe.** The search previously required 40 leverage-weighted pressure units, whereas the final ranking required raw pressure deliveries, 150 total deliveries and a recent appearance. A selected blend was consequently standardised on a different set of players from the population used for deployment. V2 now uses one shared eligibility function for forward-window model selection and final ratings: raw pressure deliveries, total deliveries and the last two calendar years relative to each training cutoff. The final 2026 rating uses the same rule relative to its 2026-11-01 anchor. The audit records the eligible training population in each window, and tests compare the final IDs with the shared helper.
+
+
+**D-73 V3 challenger uses the same eligibility in search and final ratings.** The challenger search previously defined training eligibility using leverage-weighted pressure units, while the published V3 ratings used raw pressure deliveries, total deliveries and recent appearance. The temporal candidate trials now use the shared V2 eligibility helper and the final V3 stage calls the same helper. Tests compare the published V3 player IDs with the helper's result for the final 2026-11-01 anchor.

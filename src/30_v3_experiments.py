@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from common import PROCESSED, ROOT
-from v2_lib import pressure_stats, wspearman
+from v2_lib import pressure_stats, wspearman, rating_eligible_ids
 from v3_lib import fit3
 
 spec = importlib.util.spec_from_file_location("s20", os.path.join(os.path.dirname(__file__), "20_v2_search.py"))
@@ -58,8 +58,8 @@ def run_trial(i):
     df, role, cands, ens = _G["df"], _G["role"], _G["cands"], _G["ens"]
     kind, trm, tem, anchor, min_test = _G["trials"][i]
     tr, te = df[trm], df[tem]
-    st_tr, st_te = pressure_stats(tr, role), pressure_stats(te, role)
-    elig = st_tr[st_tr.unit >= 40].index
+    st_te = pressure_stats(te, role)
+    elig = rating_eligible_ids(tr, role, anchor, min_press=40, min_total=150)
     tg = st_te[st_te.unit >= min_test]
     common = elig.intersection(tg.index)
     scores = {}
