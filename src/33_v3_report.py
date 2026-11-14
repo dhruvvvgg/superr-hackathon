@@ -77,7 +77,7 @@ def main():
     fig.tight_layout(); fig.savefig(os.path.join(V3, "v3_confirmation.png")); plt.close(fig)
 
     L = []; A = L.append
-    A("# Final model (V3): who delivers under pressure\n")
+    A("# V3 predictive challenger: pressure-performance experiments\n")
     A("This is an exploratory predictive challenger, not the primary auction shortlist. It extends V2 with a "
       "pace interaction for batters and stronger shrinkage of the wicket component for bowlers. Candidate choices "
       "were gated on tuning trials only; the legacy confirmation trials are descriptive because earlier V3 "
