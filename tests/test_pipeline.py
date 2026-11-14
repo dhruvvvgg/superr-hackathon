@@ -259,6 +259,10 @@ def test_top10_players_meet_eligibility(label):
     assert (t.n_press_balls >= e[f"{pre}_min_pressure_balls"]).all()
     assert (t.n_press_innings >= min_innings).all()
     assert (t.n_total_balls >= e["min_total_balls"]).all()
+    full = T(f"{label}_ratings.csv")
+    assert full.n_press_balls.ge(e[f"{pre}_min_pressure_balls"]).all()
+    assert full.n_press_innings.ge(min_innings).all()
+    assert full.n_total_balls.ge(e["min_total_balls"]).all()
 
 
 @pytest.mark.parametrize("role,label", [("bat", "batter"), ("bowl", "bowler")])
@@ -387,6 +391,10 @@ def test_v2_adoption_rule_respected():
                 continue
             rows = log[(log.role == role) & (log.option == k)]
             assert (rows.z > 2).any(), f"{role}.{k} moved without evidence"
+        score = chosen[role]["score"]
+        if score != "nrae":
+            rows = log[(log.role == role) & (log.option == "score") & (log.value == score)]
+            assert len(rows) == 1 and float(rows.iloc[0].z) > 2, f"{role} score {score} adopted without tuning evidence"
 
 
 # ---- v3 (final) ---------------------------------------------------------------------------------------

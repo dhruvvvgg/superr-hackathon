@@ -205,7 +205,7 @@ def main():
                          simple=np.nan, n=len(err)))
         rows.append(dict(item=f"within 2 runs rate, {name}", fitted=np.mean(np.abs(err) <= 2.0),
                          simple=np.nan, n=len(err)))
-    rows.append(dict(item="margin MAE (runs), fitted, 5-fold out of sample", fitted=np.abs(cv_err).mean(),
+    rows.append(dict(item="margin MAE (runs), fitted, strictly out of time", fitted=np.abs(cv_err).mean(),
                      simple=np.nan, n=len(y)))
     mae_fit = float(np.abs(cv_err).mean())
     mae_simple = float(np.abs(simple_err).mean())

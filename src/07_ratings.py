@@ -32,12 +32,15 @@ def main():
         print(f"  {role}: lambda_main={lm:g}, lambda_delta={ld:g}{' (edge of grid)' if edge else ''}")
 
         comp = rate(prep, lm, ld)
-        scale = 1.0
-        elig = prep.eligible(scale)
-        while elig.sum() < CFG["eligibility"]["min_pool"] and scale > 0.3:
-            scale -= 0.1
-            elig = prep.eligible(scale)
-        print(f"  {role}: {prep.P} players -> {int(elig.sum())} eligible (threshold scale {scale:.1f})")
+        elig = prep.eligible()
+        n_eligible = int(elig.sum())
+        min_pool = int(CFG["eligibility"]["min_pool"])
+        if n_eligible < min_pool:
+            raise RuntimeError(
+                f"{role}: only {n_eligible} players meet the registered eligibility thresholds; "
+                f"required minimum pool is {min_pool}. Thresholds will not be relaxed to fill the pool."
+            )
+        print(f"  {role}: {prep.P} players -> {n_eligible} eligible (registered thresholds, no relaxation)")
         t = composite(comp, elig)
         t_eb = composite(comp, elig, estimator="eb").set_index("player_id")
         t["rating_eb"] = t.player_id.map(t_eb.rating)
