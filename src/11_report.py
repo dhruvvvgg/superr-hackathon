@@ -472,9 +472,8 @@ def main():
     # ---- 12, 13 ---------------------------------------------------------------------------------------------
     A("## 12. Reproduction\n")
     A("```bash\npip install -r requirements.txt\n```\n\n```bash\npython run_all.py\n```\n\n```bash\npython -m pytest -q tests\n```\n")
-    A("About 7 minutes on 4 cores for the full pipeline from the raw CSVs. Seeds are fixed in `config.json`. "
-      "A run from a fresh clone reproduced every table byte for byte (DECISIONS.md, phase 2a). "
-      "`python src/phase2_experiments.py` re-runs the model comparisons (about 40 minutes).\n")
+    A("Runtime depends on available CPU, model fitting and the 1,000-resample match bootstrap. Seeds are fixed "
+      "in `config.json`, and the GitHub Actions workflow runs the full pipeline and acceptance tests remotely.\n")
     A("## 13. Open questions and next steps\n")
     A("- Check the retention lists and replace the availability column, then re-run stage 09.")
     A("- Obtain true innings totals or extras run values; the reconstruction error would vanish.")
