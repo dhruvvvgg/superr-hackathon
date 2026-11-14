@@ -139,44 +139,89 @@ def main():
     wk_ok = (10 - wk.res_n) == wk.wk_2
     print(f"  wicket check: {int(wk_ok.sum())}/{len(wk)} chases match 'won by N wickets'")
 
-    # ---- extras calibration -------------------------------------------------------------
+    # ---- expanding, strictly past-only extras calibration --------------------------------
+    # A match's outcome may calibrate later matches, but never its own run reconstruction or
+    # any earlier match. All matches played on the same date share one parameter vintage.
     cal = m[m.clean & (m.res_kind == "runs")].copy()
+    cal["calibration_date"] = pd.to_datetime(cal.match_date).dt.normalize()
     D = np.column_stack([(cal[f"{t}_1"] - cal[f"{t}_2"]).values for t in EXTRA_TYPES]).astype(float)
     y = (cal.res_n - (cal.bat_1 - cal.bat_2) - (cal.e2_1 - cal.e2_2)
          - PENALTY_RUNS * (cal.Penalty_1 - cal.Penalty_2)).values.astype(float)
-    v = l1_fit(D, y)
     simple = np.ones(len(EXTRA_TYPES))
-    # out-of-sample check, 5 folds
-    rng = np.random.RandomState(CFG["seed"])
-    fold = rng.permutation(len(y)) % 5
-    cv_err = np.zeros(len(y))
-    for k in range(5):
-        vk = l1_fit(D[fold != k], y[fold != k])
-        cv_err[fold == k] = D[fold == k] @ vk - y[fold == k]
+    min_train_matches = 40
+    param_rows = []
+    match_dates = pd.to_datetime(m.match_date).dt.normalize()
+    for date in sorted(match_dates.dropna().unique()):
+        prior = cal.calibration_date < date
+        n_prior = int(prior.sum())
+        if n_prior >= min_train_matches:
+            v_date = l1_fit(D[prior], y[prior])
+            method = "expanding_lad"
+            max_prior = cal.loc[prior, "calibration_date"].max()
+        else:
+            v_date = simple.copy()
+            method = "one_run_fallback"
+            max_prior = pd.NaT
+        row = dict(calibration_date=date, calibration_method=method,
+                   calibration_training_matches=n_prior,
+                   calibration_max_training_date=max_prior)
+        row.update({f"run_value_{t}": float(x) for t, x in zip(EXTRA_TYPES, v_date)})
+        param_rows.append(row)
+    params_by_date = pd.DataFrame(param_rows)
+    m["calibration_date"] = match_dates
+    m = checked_merge(m, params_by_date, "matches+past-only extras calibration",
+                      on="calibration_date", how="left", validate="m:1")
+    for t in EXTRA_TYPES:
+        m[f"run_value_{t}"] = m[f"run_value_{t}"].fillna(1.0)
+    m["calibration_method"] = m.calibration_method.fillna("one_run_fallback")
+    m["calibration_training_matches"] = m.calibration_training_matches.fillna(0).astype(int)
+    m["calibration_max_training_date"] = pd.to_datetime(
+        m.calibration_max_training_date, errors="coerce").dt.strftime("%Y-%m-%d").fillna("")
+    run_value_cols = [f"run_value_{t}" for t in EXTRA_TYPES]
+    extras_detail = m[["match_id", "match_date", "calibration_method", "calibration_training_matches",
+                       "calibration_max_training_date"] + run_value_cols].copy()
+    extras_detail.to_csv(os.path.join(TABLES, "extras_calibration_by_match.csv"),
+                         index=False, float_format="%.6g")
+
+    # Strictly out-of-time margin diagnostic: every row is scored with coefficients estimated
+    # only from clean run-margin matches on earlier dates.
+    cal_eval = cal.merge(extras_detail[["match_id"] + run_value_cols], on="match_id", validate="1:1")
+    V_oof = cal_eval[run_value_cols].to_numpy(dtype=float)
+    cv_err = (D * V_oof).sum(axis=1) - y
+    simple_err = D @ simple - y
+    applied_median = np.median(extras_detail[run_value_cols].to_numpy(dtype=float), axis=0)
     rows = []
-    for t, val in zip(EXTRA_TYPES, v):
-        rows.append(dict(item=f"run value: {t}", fitted=round(float(val), 3), simple=1.0,
+    for t, fitted_value in zip(EXTRA_TYPES, applied_median):
+        rows.append(dict(item=f"run value: {t}", fitted=round(float(fitted_value), 3), simple=1.0,
                          n=int(b.et.eq(t).sum())))
     rows.append(dict(item="run value: Penalty (fixed)", fitted=PENALTY_RUNS, simple=PENALTY_RUNS,
                      n=int(b.et.eq("Penalty").sum())))
-    for name, vec in [("fitted", v), ("simple", simple)]:
-        e = D @ vec - y
-        rows.append(dict(item=f"margin MAE (runs), {name}", fitted=np.abs(e).mean(), simple=np.nan, n=len(y)))
-        rows.append(dict(item=f"margin RMSE (runs), {name}", fitted=np.sqrt((e ** 2).mean()), simple=np.nan, n=len(y)))
-        rows.append(dict(item=f"exact-margin rate, {name}", fitted=np.mean(np.abs(np.round(e)) < 0.5),
-                         simple=np.nan, n=len(y)))
-        rows.append(dict(item=f"within 2 runs rate, {name}", fitted=np.mean(np.abs(e) <= 2.0), simple=np.nan, n=len(y)))
+    for name, err in [("fitted", cv_err), ("simple", simple_err)]:
+        rows.append(dict(item=f"margin MAE (runs), {name}", fitted=np.abs(err).mean(),
+                         simple=np.nan, n=len(err)))
+        rows.append(dict(item=f"margin RMSE (runs), {name}", fitted=np.sqrt(np.mean(err ** 2)),
+                         simple=np.nan, n=len(err)))
+        rows.append(dict(item=f"exact-margin rate, {name}", fitted=np.mean(np.abs(np.round(err)) < 0.5),
+                         simple=np.nan, n=len(err)))
+        rows.append(dict(item=f"within 2 runs rate, {name}", fitted=np.mean(np.abs(err) <= 2.0),
+                         simple=np.nan, n=len(err)))
     rows.append(dict(item="margin MAE (runs), fitted, 5-fold out of sample", fitted=np.abs(cv_err).mean(),
                      simple=np.nan, n=len(y)))
-    mae_fit = np.abs(D @ v - y).mean()
-    mae_simple = np.abs(D @ simple - y).mean()
-    print(f"  extras values {dict(zip(EXTRA_TYPES, np.round(v, 3)))}")
-    print(f"  margin MAE fitted {mae_fit:.3f} vs simple {mae_simple:.3f}; cv {np.abs(cv_err).mean():.3f}; n={len(y)}")
+    mae_fit = float(np.abs(cv_err).mean())
+    mae_simple = float(np.abs(simple_err).mean())
+    print(f"  median past-only extras values {dict(zip(EXTRA_TYPES, np.round(applied_median, 3)))}")
+    print(f"  strictly past-only margin MAE {mae_fit:.3f} vs fixed 1-run rule {mae_simple:.3f}; n={len(y)}")
 
-    val = dict(zip(EXTRA_TYPES, v))
+    val = dict(zip(EXTRA_TYPES, applied_median))
     val["Penalty"] = PENALTY_RUNS
     val["none"] = 0.0
-    b["extra_runs"] = b.et.map(val).astype(float) + b.extras_2_runs
+    # Join each match's own historical calibration vintage; no same-match or future result is used.
+    b = checked_merge(b, extras_detail[["match_id"] + run_value_cols], "deliveries+past-only extras values",
+                      on="match_id", how="left", validate="m:1")
+    b["extra_runs"] = b["extras_2_runs"].astype(float)
+    for t, col in zip(EXTRA_TYPES, run_value_cols):
+        b["extra_runs"] += np.where(b.et == t, b[col], 0.0)
+    b["extra_runs"] += np.where(b.et == "Penalty", PENALTY_RUNS, 0.0)
     b["total_runs"] = b.runs + b.extra_runs
     # runs charged to the bowler: bat runs plus wides and no-balls (not byes, leg byes, penalties)
     b["bowler_runs"] = b.runs + np.where(b.is_wide | b.is_noball, b.extra_runs, 0.0)
@@ -187,48 +232,22 @@ def main():
     m = checked_merge(m, tot.rename(columns={1: "tot_1", 2: "tot_2"}).reset_index(),
                       "matches+reconstructed totals", on="match_id", how="left")
 
-    # ---- chase target -------------------------------------------------------------------
-    # reconstructed: first-innings total + 1.  result_anchored: recover the true target from the
-    # result string so that the end-of-chase state is exact (see DECISIONS.md D-07).
-    last = b[b.innings == 2].groupby("match_id").tail(1).set_index("match_id")
-    m["score_before_last_2"] = m.match_id.map(last.score_before)
-    m["target_recon"] = np.ceil(m.tot_1 - 1e-9) + 1 - 0.0
-    tgt = m.target_recon.copy()
-    is_r = m.clean & (m.res_kind == "runs")
-    is_w = m.clean & (m.res_kind == "wkts")
-    is_t = m.clean & (m.res_kind == "tie")
-    tgt[is_r] = m.tot_2[is_r] + m.res_n[is_r] + 1
-    tgt[is_t] = m.tot_2[is_t] + 1
-    lo = np.floor(m.score_before_last_2[is_w]) + 1
-    tgt[is_w] = np.minimum(np.maximum(m.target_recon[is_w], lo), np.maximum(m.tot_2[is_w], lo))
-    m["target_anchored"] = tgt
-    m["target"] = m.target_anchored if CFG["target_mode"] == "result_anchored" else m.target_recon
-    m["target_source"] = np.select(
-        [is_r, is_w, is_t],
-        ["result_anchored_run_margin", "result_anchored_wicket_margin", "result_anchored_tie"],
-        default="first_innings_reconstruction")
-    m["target_adjustment_runs"] = m.target_anchored - m.target_recon
-    target_audit = m[m.clean][["match_id", "match_date", "res_kind", "res_n", "tot_1", "tot_2",
-                               "score_before_last_2", "target_recon", "target_anchored", "target",
-                               "target_source", "target_adjustment_runs"]].copy()
-    target_audit.to_csv(os.path.join(TABLES, "target_reconstruction_by_match.csv"), index=False, float_format="%.6g")
-    target_summary = target_audit.groupby(["res_kind", "target_source"]).agg(
-        matches=("match_id", "nunique"), mean_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().mean()),
-        median_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().median()),
-        max_abs_adjustment=("target_adjustment_runs", lambda x: x.abs().max()),
-        adjusted_matches=("target_adjustment_runs", lambda x: int((x.abs() > 1e-9).sum()))).reset_index()
+    # ---- chase target: reconstructed exclusively from the first innings -----------------
+    # The target is a pre-chase match condition. Never infer it from the final score, margin,
+    # wickets remaining, winner, or result string.
+    m["target_recon"] = np.rint(m.tot_1) + 1.0
+    m["target"] = m["target_recon"]
+    m["target_source"] = "first_innings_ball_reconstruction"
+    target_audit = m[m.clean][["match_id", "match_date", "tot_1", "target_recon", "target",
+                               "target_source", "calibration_method", "calibration_training_matches",
+                               "calibration_max_training_date"]].copy()
+    target_audit.to_csv(os.path.join(TABLES, "target_reconstruction_by_match.csv"),
+                        index=False, float_format="%.6g")
+    target_summary = target_audit.groupby(["target_source", "calibration_method"]).agg(
+        matches=("match_id", "nunique"), mean_reconstructed_first_innings=("tot_1", "mean"),
+        mean_target=("target", "mean"), min_target=("target", "min"),
+        max_target=("target", "max")).reset_index()
     save_table(target_summary, "target_reconstruction_audit.csv")
-    over = (m.tot_2 - m.target_recon)[is_w]
-    short = (m.tot_1 - m.tot_2 - m.res_n)[is_r]
-    rows.append(dict(item="wicket-win chases: reconstructed total minus reconstructed target, mean",
-                     fitted=over.mean(), simple=np.nan, n=len(over)))
-    rows.append(dict(item="wicket-win chases: share with reconstructed total below reconstructed target",
-                     fitted=(over < 0).mean(), simple=np.nan, n=len(over)))
-    rows.append(dict(item="run-margin matches: |margin error| mean with fitted values",
-                     fitted=short.abs().mean(), simple=np.nan, n=len(short)))
-    rows.append(dict(item="target adjustment |anchored - reconstructed|, mean (runs)",
-                     fitted=(m.target_anchored - m.target_recon)[m.clean].abs().mean(), simple=np.nan,
-                     n=int(m.clean.sum())))
     save_table(pd.DataFrame(rows), "extras_calibration.csv")
 
     # ---- venue context: strictly past-date first-innings average, shrunk to past tier mean ---
@@ -269,8 +288,8 @@ def main():
 
     # ---- attach match info to deliveries --------------------------------------------------
     keep = ["match_id", "comp_id", "match_date", "year", "tier", "venue_id", "venue_avg", "clean",
-            "reduced", "win_team_id", "target", "target_recon", "target_anchored", "target_source",
-            "target_adjustment_runs", "home_team_id", "away_team_id", "home_assoc",
+            "reduced", "win_team_id", "target", "target_recon", "target_source",
+            "home_team_id", "away_team_id", "home_assoc",
             "away_assoc", "stage", "knock_out"]
     b = checked_merge(b, m[keep], "deliveries+match info", on="match_id", how="left", validate="m:1")
     b["bat_assoc"] = np.where(b.batting_team_id == b.home_team_id, b.home_assoc, b.away_assoc)
@@ -321,9 +340,16 @@ def main():
              claimed=1.0, observed=round(float(wk_ok.mean()), 5),
              status="pass" if wk_ok.all() else "FAIL",
              note=f"{int(wk_ok.sum())}/{len(wk)} matches; one result string corrected from an outside source (D-24)"),
-        dict(check="extras calibration MAE, fitted <= simple 1-run rule", claimed=round(mae_simple, 4),
-             observed=round(mae_fit, 4), status="pass" if mae_fit <= mae_simple + 1e-9 else "FAIL",
-             note=f"n={len(y)} run-margin matches; out-of-sample MAE {np.abs(cv_err).mean():.3f}"),
+        dict(check="extras calibration strictly past-only", claimed="training dates strictly earlier than scored match",
+             observed=bool((pd.to_datetime(extras_detail.loc[extras_detail.calibration_training_matches > 0,
+                          "calibration_max_training_date"]) <
+                            pd.to_datetime(extras_detail.loc[extras_detail.calibration_training_matches > 0,
+                          "match_date"])).all()),
+             status="pass" if (pd.to_datetime(extras_detail.loc[extras_detail.calibration_training_matches > 0,
+                          "calibration_max_training_date"]) <
+                               pd.to_datetime(extras_detail.loc[extras_detail.calibration_training_matches > 0,
+                          "match_date"])).all() else "FAIL",
+             note=f"expanding LAD; one-run fallback before {min_train_matches} prior clean run-margin matches"),
     ]
     for k, vv in excl.items():
         acc.append(dict(check=f"matches excluded: {k}", claimed="", observed=vv, status="info", note=""))
