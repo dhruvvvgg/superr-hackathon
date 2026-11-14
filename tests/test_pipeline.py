@@ -72,21 +72,27 @@ def test_source_overrides_are_only_the_documented_one():
     assert raw_m.loc[20190, "result"] == CFG["source_overrides"]["result_fixes"]["20190"]["raw_result"]
 
 
-def test_extras_calibration_no_worse_than_one_run_rule():
-    c = T("extras_calibration.csv").set_index("item").fitted
-    assert c["margin MAE (runs), fitted"] <= c["margin MAE (runs), simple"] + 1e-9
+def test_extras_calibration_is_strictly_past_only():
+    detail = T("extras_calibration_by_match.csv")
+    assert detail.match_id.is_unique
+    assert detail.calibration_method.isin(["one_run_fallback", "expanding_lad"]).all()
+    trained = detail[detail.calibration_method == "expanding_lad"]
+    assert len(trained) > 0
+    assert (trained.calibration_training_matches >= 40).all()
+    assert (pd.to_datetime(trained.calibration_max_training_date) <
+            pd.to_datetime(trained.match_date)).all()
+    metrics = T("extras_calibration.csv").set_index("item")
+    assert np.isfinite(metrics.loc["margin MAE (runs), fitted", "fitted"])
+    assert np.isfinite(metrics.loc["margin MAE (runs), simple", "fitted"])
 
 
-def test_chase_end_state_consistent_with_result(balls, minfo):
-    """With the anchored target, a chase won by wickets ends at or past the target and a chase lost
-    by N runs ends exactly N+1 short."""
-    last = balls[(balls.innings == 2) & balls.clean].groupby("match_id").tail(1).set_index("match_id")
-    end = last.score_before + last.total_runs
-    mi = minfo.set_index("match_id").loc[last.index]
-    w = mi.res_kind == "wkts"
-    assert (end[w] >= last.target[w] - 1e-6).all()
-    r = mi.res_kind == "runs"
-    assert np.allclose(last.target[r] - end[r], mi.res_n[r] + 1)
+def test_chase_target_uses_only_first_innings_reconstruction(minfo):
+    clean = minfo[minfo.clean]
+    expected = np.rint(clean.tot_1.to_numpy(dtype=float)) + 1.0
+    assert np.allclose(clean.target.to_numpy(dtype=float), expected)
+    assert np.allclose(clean.target_recon.to_numpy(dtype=float), expected)
+    assert clean.target_source.eq("first_innings_ball_reconstruction").all()
+    assert "target_anchored" not in clean.columns
 
 
 # ---- win probability ---------------------------------------------------------------------------------
@@ -136,6 +142,7 @@ def test_no_match_scored_by_a_model_that_saw_it():
     assert (pd.to_datetime(forward_audit.calibration_max_date) <
             pd.to_datetime(forward_audit.test_min_date)).all()
     assert audit.calibrated_innings.eq("1;2").all()
+    assert audit.calibration_method.eq("match_weighted_isotonic").all()
     exported = T("wp_calibration_fold_audit.csv")
     assert len(exported) == len(audit)
     assert (exported.calibration_matches_in_test == 0).all()
@@ -404,10 +411,14 @@ def test_target_reconstruction_provenance_is_exported():
     audit = T("target_reconstruction_audit.csv")
     detail = T("target_reconstruction_by_match.csv")
     assert len(audit) > 0 and len(detail) > 0
-    assert {"target_recon", "target_anchored", "target_source", "target_adjustment_runs"}.issubset(detail.columns)
-    assert detail.target_source.notna().all()
-    if CFG["target_mode"] == "result_anchored":
-        assert np.allclose(detail.target, detail.target_anchored)
+    assert {"tot_1", "target_recon", "target", "target_source", "calibration_method",
+            "calibration_training_matches", "calibration_max_training_date"}.issubset(detail.columns)
+    assert detail.target_source.eq("first_innings_ball_reconstruction").all()
+    assert np.allclose(detail.target, np.rint(detail.tot_1) + 1.0)
+    assert not {"target_anchored", "target_adjustment_runs", "res_n", "tot_2"}.intersection(detail.columns)
+    trained = detail[detail.calibration_method == "expanding_lad"]
+    assert (pd.to_datetime(trained.calibration_max_training_date) <
+            pd.to_datetime(trained.match_date)).all()
 
 
 def test_playing_eleven_anomalies_have_reconcilable_detail():

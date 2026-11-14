@@ -163,7 +163,7 @@ def main():
             method = "one_run_fallback"
             max_prior = pd.NaT
         row = dict(calibration_date=date, calibration_method=method,
-                   calibration_training_matches=n_prior,
+                   calibration_training_matches=n_prior if method == "expanding_lad" else 0,
                    calibration_max_training_date=max_prior)
         row.update({f"run_value_{t}": float(x) for t, x in zip(EXTRA_TYPES, v_date)})
         param_rows.append(row)
