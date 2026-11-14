@@ -118,11 +118,36 @@ def pressure_stats(df, role, pcol="pA"):
     return g
 
 
+def rating_eligible_ids(df, role, anchor, min_press=40, min_total=150, recent_years=2):
+    """Player universe for V2 model selection and deployment.
+
+    Counts are raw deliveries faced/bowled, matching the final rating export. Recency is
+    evaluated relative to the training cutoff (or final anchor), using the last N calendar
+    years and excluding matches after the anchor.
+    """
+    dates = pd.to_datetime(df.match_date)
+    anchor = pd.Timestamp(anchor)
+    unit = df.faced.fillna(0.0) if role == "bat" else pd.Series(1.0, index=df.index)
+    pressure = df.pA.astype(bool)
+    n_press = unit[pressure].groupby(df.player_id[pressure]).sum()
+    n_total = unit.groupby(df.player_id).sum()
+    recent_start_year = anchor.year - int(recent_years) + 1
+    recent = ((dates.dt.year >= recent_start_year) & (dates.dt.year <= anchor.year) &
+              (dates <= anchor) & (unit > 0)).groupby(df.player_id).any()
+    stats = pressure_stats(df, role)
+    ids = stats.index[
+        (n_press.reindex(stats.index).fillna(0.0) >= min_press) &
+        (n_total.reindex(stats.index).fillna(0.0) >= min_total) &
+        recent.reindex(stats.index).fillna(False)
+    ]
+    return ids
+
+
 def eval_sets(tr, te, role, anchor, cfg, min_train=40, min_test=25, extra_scores=None):
     """Fit on `tr`, score on pressure performance in `te`. Returns weighted Spearman correlations (NRAE and
     WPA targets) for several score variants, and the number of players compared."""
     st_tr, st_te = pressure_stats(tr, role), pressure_stats(te, role)
-    elig = st_tr[st_tr.unit >= min_train].index
+    elig = rating_eligible_ids(tr, role, anchor, min_press=min_train)
     tg = st_te[st_te.unit >= min_test]
     common = elig.intersection(tg.index)
     out = {"n": len(common)}

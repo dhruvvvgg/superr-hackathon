@@ -351,6 +351,18 @@ def test_v2_top10_lists(label):
 
 
 @pytest.mark.parametrize("label,role", [("batters", "bat"), ("bowlers", "bowl")])
+@pytest.mark.parametrize("label,role,file", [
+    ("batters", "bat", "bat_credit.parquet"),
+    ("bowlers", "bowl", "bowl_credit.parquet")
+])
+def test_v2_final_eligibility_matches_the_model_selection_policy(label, role, file):
+    from v2_lib import rating_eligible_ids
+    df = pd.read_parquet(os.path.join(PROCESSED, file))
+    expected = set(rating_eligible_ids(df, role, pd.Timestamp("2026-11-01")))
+    ratings = pd.read_csv(os.path.join(V2, f"ratings_{label}.csv"))
+    assert set(ratings.player_id) == expected
+
+
 def test_v2_final_rating_applies_the_selected_score_variant(label, role):
     chosen = json.load(open(os.path.join(V2, "chosen_config.json")))[role]
     ratings = pd.read_csv(os.path.join(V2, f"ratings_{label}.csv"))
@@ -389,6 +401,7 @@ def test_v2_search_uses_only_forward_temporal_windows():
     }
     assert audit.future_train_matches.eq(0).all()
     assert (pd.to_datetime(audit.train_max_date) < pd.to_datetime(audit.test_min_date)).all()
+    assert audit.eligible_train_players.gt(0).all()
 
 
 def test_v2_adoption_rule_respected():

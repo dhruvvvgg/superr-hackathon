@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from common import PROCESSED, ROOT
-from v2_lib import eval_fold
+from v2_lib import eval_fold, rating_eligible_ids
 
 OUT = os.path.join(ROOT, "outputs", "v2")
 os.makedirs(OUT, exist_ok=True)
@@ -72,6 +72,7 @@ def temporal_audit(df, role):
         rows.append(dict(role=role, kind=kind, cutoff=cut_text, test_end=end.date().isoformat(),
                          train_matches=int(df.loc[train, "match_id"].nunique()),
                          test_matches=int(df.loc[test, "match_id"].nunique()),
+                         eligible_train_players=int(len(rating_eligible_ids(df.loc[train], role, cut))),
                          train_max_date=train_dates.max().date().isoformat(),
                          test_min_date=test_dates.min().date().isoformat(),
                          future_train_matches=future))
