@@ -235,6 +235,8 @@ def main():
     # ---- chase target: reconstructed exclusively from the first innings -----------------
     # The target is a pre-chase match condition. Never infer it from the final score, margin,
     # wickets remaining, winner, or result string.
+    if CFG.get("target_mode") != "first_innings_reconstructed":
+        raise ValueError("target_mode must be first_innings_reconstructed; result-anchored targets are prohibited")
     m["target_recon"] = np.rint(m.tot_1) + 1.0
     m["target"] = m["target_recon"]
     m["target_source"] = "first_innings_ball_reconstruction"
