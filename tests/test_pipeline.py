@@ -1,6 +1,7 @@
 """Acceptance checks from section 11 of the handover plus leakage and silent-error guards.
 Run after `python run_all.py`."""
 import os
+import json
 import pickle
 import re
 import subprocess
