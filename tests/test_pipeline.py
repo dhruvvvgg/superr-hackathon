@@ -39,6 +39,8 @@ def test_primary_findings_explain_weighted_composite_contributions():
     with open(os.path.join(ROOT, "docs", "FINDINGS.md"), encoding="utf-8") as f:
         findings = f.read()
     assert "Primary task ranking" in findings
+    assert "`docs/FINDINGS.md` is the full record" in findings
+    assert "composite. remains" not in findings
     assert "largest weighted contribution from" in findings
     assert "Composite rationale:" in findings
     assert "Rated on leverage-weighted level" not in findings
