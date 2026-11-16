@@ -64,7 +64,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add outputs/ docs/FINDINGS.md docs/V3_FINDINGS.md
+          git add outputs/ docs/FINDINGS.md docs/V2_FINDINGS.md docs/V3_FINDINGS.md
           if git diff --cached --quiet; then
             echo "Generated reports and outputs are already current."
           else
