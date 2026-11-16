@@ -25,21 +25,24 @@ def md(df, floatfmt=2):
     return "\n".join(lines)
 
 
-def reason(r, role):
+def reason(r, role, weights):
     z = {"level": r.z_level, "impact": r.z_impact, "consistency": r.z_consistency, "delta": r.z_delta}
     lab = {"level": "pressure level", "impact": "win-probability impact", "consistency": "consistency",
            "delta": "lift over own normal level"}
-    lead = f"leverage-weighted level ({z['level']:+.1f} SD)"
-    sec = max(("impact", "consistency", "delta"), key=lambda k: z[k])
-    if z[sec] >= 1.0:
-        lead += f", also high on {lab[sec]} ({z[sec]:+.1f})"
+    contribution = {k: weights[k] * z[k] for k in z}
+    ordered = sorted(contribution, key=contribution.get, reverse=True)
+    lead = (f"largest weighted contribution from {lab[ordered[0]]} "
+            f"({contribution[ordered[0]]:+.2f})")
+    if contribution[ordered[1]] > 0:
+        lead += (f", followed by {lab[ordered[1]]} "
+                 f"({contribution[ordered[1]]:+.2f})")
     if role == "bat":
         raw_ = (f"strike rate {r.press_sr:.0f} under pressure against {r.normal_sr:.0f} otherwise, "
                 f"{int(r.press_runs)} runs and {int(r.press_outs)} dismissals in {int(r.n_press_balls)} pressure balls")
     else:
         raw_ = (f"economy {r.press_econ:.2f} under pressure against {r.normal_econ:.2f} otherwise, "
                 f"{int(r.press_wkts)} wickets in {int(r.n_press_balls)} pressure balls")
-    return f"Rated on {lead}; {raw_}."
+    return f"Composite rationale: {lead}; raw pressure evidence: {raw_}."
 
 
 def main():
@@ -101,7 +104,7 @@ def main():
                           "Pressure balls": t.n_press_balls})
         A(md(d) + "\n")
         for r in t.itertuples():
-            A(f"{r.final_rank}. **{r.player_name}**: {reason(r, role)}")
+            A(f"{r.final_rank}. **{r.player_name}**: {reason(r, role, W)}")
         A("")
     A("The bootstrap interval of a top-ranked player usually sits below his point rating. That is expected: "
       "the players at the top of a noisy ranking are partly there by luck, and resampling the matches pulls "
