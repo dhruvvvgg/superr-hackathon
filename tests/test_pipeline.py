@@ -119,7 +119,7 @@ def test_wp_calibration_is_within_diagnostic_tolerance():
         "calibration gap <= 0.12 in bins with at least 2500 balls",
         "no more than three bins with at least 2500 balls outside match-bootstrap 2-SD band"
     ])]
-    assert len(gate) == 2 and gate.status.eq("pass").all()
+    assert len(gate) == 4 and gate.status.eq("pass").all()
 
 
 def test_no_match_scored_by_a_model_that_saw_it():
@@ -350,7 +350,6 @@ def test_v2_top10_lists(label):
     assert (t.boot_rating_p10 <= t.rating).all() and (t.rating <= t.boot_rating_p90).all()
 
 
-@pytest.mark.parametrize("label,role", [("batters", "bat"), ("bowlers", "bowl")])
 @pytest.mark.parametrize("label,role,file", [
     ("batters", "bat", "bat_credit.parquet"),
     ("bowlers", "bowl", "bowl_credit.parquet")
@@ -363,6 +362,7 @@ def test_v2_final_eligibility_matches_the_model_selection_policy(label, role, fi
     assert set(ratings.player_id) == expected
 
 
+@pytest.mark.parametrize("label,role", [("batters", "bat"), ("bowlers", "bowl")])
 def test_v2_final_rating_applies_the_selected_score_variant(label, role):
     chosen = json.load(open(os.path.join(V2, "chosen_config.json")))[role]
     ratings = pd.read_csv(os.path.join(V2, f"ratings_{label}.csv"))
