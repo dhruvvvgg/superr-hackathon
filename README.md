@@ -73,7 +73,7 @@ context/rr_auction_context.md   public context with source tags
 ## Data notes
 
 - The six CSVs sit unchanged in `data/raw/`. They arrived with plain names, so no renaming was needed.
-- `outputs/v3/rr_fit/` is the current RR fit layer; the earlier outputs/tables/rr_fit.csv is retained as the pre-V3 comparison.
+- `outputs/tables/rr_fit.csv` is the primary RR auction analysis using the pre-registered four-component task composite. `outputs/v3/rr_fit/` is a separate exploratory analysis using V3 challenger ratings and V3 batter credit; it does not replace the primary task ranking.
 - `outputs/tables/playing_eleven_missing_strikers.csv` reconciles missing source XI references against the competition roster; `playing_eleven_duplicates.csv` preserves duplicate source rows for inspection.
 - `outputs/tables/striker_non_striker_identity_collisions.csv` and `bowler_over_limit.csv` expose the remaining source-level edge cases with row-level detail.
 - Wicket expectation uses a fold-local innings/phase mean baseline; the calibrated LightGBM classifier is retained as a diagnostic candidate and is not used for player credit unless it is selected in a future validated revision.
