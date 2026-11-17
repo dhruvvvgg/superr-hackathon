@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - review-fixes-2026-11-13
+    paths-ignore:
+      - 'outputs/**'
+      - 'docs/**'
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
