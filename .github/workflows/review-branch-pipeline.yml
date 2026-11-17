@@ -1,5 +1,5 @@
 name: Review branch full pipeline
-# Trigger full validation after fold-local expected-run calibration and acceptance updates.
+# Trigger full validation after target-provenance enforcement, calibration, and acceptance-suite corrections.
 
 on:
   push:
