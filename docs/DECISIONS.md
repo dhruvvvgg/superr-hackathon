@@ -545,3 +545,6 @@ plausible; the batter changes are the weaker ones. The leakage caveat of D-45 st
 
 
 **D-73 V3 challenger uses the same eligibility in search and final ratings.** The challenger search previously defined training eligibility using leverage-weighted pressure units, while the published V3 ratings used raw pressure deliveries, total deliveries and recent appearance. The temporal candidate trials now use the shared V2 eligibility helper and the final V3 stage calls the same helper. Tests compare the published V3 player IDs with the helper's result for the final 2026-11-01 anchor.
+
+
+**D-74 Fold-local beta calibration for win probability.** The prior match-weighted Platt mapping used one linear log-odds transform and left a material upper-tail error in first-innings probabilities on the regenerated chronological folds. Stage 03 now fits a regularised, monotone beta calibrator on the same held-out calibration matches, with a positive-slope Platt fallback when the beta fit is not monotone. Match-level calibration weights and the fold's held-out scoring boundary are unchanged. This is a calibration-method change, not a relaxation of acceptance tolerances; the full out-of-fold calibration checks remain mandatory.

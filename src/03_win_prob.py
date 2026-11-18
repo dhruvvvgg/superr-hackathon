@@ -21,7 +21,7 @@ def match_folds(match_ids, match_dates, n_folds, seed):
 
 
 def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=None, keep=False):
-    """Out-of-fold predictions with match-weighted, per-innings Platt calibration.
+    """Out-of-fold predictions with match-weighted, per-innings beta calibration.
 
     Calibration is learned from held-out training matches. Every match receives equal total
     calibration weight, preventing long matches from dominating the mapping. Forward folds
@@ -66,10 +66,21 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
                     counts = pd.Series(ids_inn).value_counts()
                     match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
                     match_weights *= len(match_weights) / match_weights.sum()
-                    calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
-                    calibrator.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
-                    if float(calibrator.coef_[0, 0]) > 0:
-                        calibrators[inn] = calibrator
+                    # Beta calibration is a smooth two-parameter mapping that can correct
+                    # asymmetric tail errors that a single Platt slope cannot represent.
+                    p_i = np.clip(p_cal[im], 1e-5, 1 - 1e-5)
+                    beta_x = np.column_stack([np.log(p_i), -np.log1p(-p_i)])
+                    beta = LogisticRegression(C=10.0, solver="lbfgs", max_iter=2000)
+                    beta.fit(beta_x, cal_y[im], sample_weight=match_weights)
+                    beta_coef = beta.coef_[0]
+                    if np.all(beta_coef > 0):
+                        calibrators[inn] = ("beta", beta)
+                    else:
+                        # Keep a monotone fallback if the flexible beta fit is not monotone.
+                        platt = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                        platt.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
+                        if float(platt.coef_[0, 0]) > 0:
+                            calibrators[inn] = ("platt", platt)
         # Keep the same base estimator that generated calibration predictions. Refitting on
         # calibration matches shifts the score distribution and invalidates the learned mapping.
         mdl = pilot if pilot is not None else WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
@@ -91,7 +102,9 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
             calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
-            calibration_method="match_weighted_platt",
+            calibration_method=";".join(
+                f"{inn}:{method[0]}" for inn, method in sorted(calibrators.items())
+            ) or "none",
         ))
     return (pred, models, audit)
 

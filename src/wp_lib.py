@@ -135,15 +135,19 @@ class WPModel:
         return self
 
     def _apply_calibration(self, probabilities, innings):
-        """Apply fold-local Platt calibration, separately by innings."""
+        """Apply fold-local beta calibration (or monotone Platt fallback) by innings."""
         out = np.asarray(probabilities, dtype=float).copy()
         innings = np.asarray(innings)
-        for inn, calibrator in self.calibrators.items():
+        for inn, entry in self.calibrators.items():
             mask = innings == inn
             if mask.any():
                 p = np.clip(out[mask], 1e-5, 1 - 1e-5)
-                z = np.log(p / (1.0 - p)).reshape(-1, 1)
-                out[mask] = calibrator.predict_proba(z)[:, 1]
+                method, calibrator = entry if isinstance(entry, tuple) else ("platt", entry)
+                if method == "beta":
+                    X = np.column_stack([np.log(p), -np.log1p(-p)])
+                else:
+                    X = np.log(p / (1.0 - p)).reshape(-1, 1)
+                out[mask] = calibrator.predict_proba(X)[:, 1]
         return np.clip(out, 1e-6, 1 - 1e-6)
 
     def predict(self, F):

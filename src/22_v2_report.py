@@ -137,9 +137,17 @@ def main():
     A("Every option tried, as a difference from the reference (`search_log.csv`; positive = better; adopted only "
       "when z > 2):\n")
     A(md(lg, 3) + "\n")
-    A("In words. For batters nothing beat the reference. For bowlers, dropping the recency decay and counting all "
-      "opposition at full weight both passed the rule. That fits bowling quality being steadier over years than "
-      "batting form, though the data only show the prediction gain, not the reason.\n")
+    adopted = log[log.z > 2]
+    if adopted.empty:
+        A("In words. No tested option crossed the two-standard-error adoption threshold; the reference "
+          "configuration was retained for both roles.\n")
+    else:
+        choices = "; ".join(
+            f"{'batters' if r.role == 'bat' else 'bowlers'} {r.option}={r.value} (z={r.z:.2f})"
+            for r in adopted.itertuples()
+        )
+        A(f"In words. The tuning-only two-standard-error rule adopted: {choices}. "
+          "No other tested option crossed the threshold. These are predictive associations, not causal effects.\n")
     A("## 4. Does it predict anything? (confirmation trials, never used for tuning)\n")
     cc = c[["role", "method", "objective", "se", "corr_nrae_target", "corr_wpa_target", "players"]].copy()
     cc["role"] = cc.role.map({"bat": "batters", "bowl": "bowlers"})
@@ -149,21 +157,22 @@ def main():
     A("Figure: `v2_confirmation.png`. Reading it:\n")
     b2 = c[(c.role == "bat")].set_index("method").objective
     w2 = c[(c.role == "bowl")].set_index("method").objective
-    A(f"- The rating beats the obvious scouting statistics. Raw pressure strike rate scores {b2['raw strike rate']:.3f} "
-      f"for batters and raw pressure economy {w2['raw economy (negated)']:.3f} for bowlers, against {b2['v2 chosen']:.3f} and {w2['v2 chosen']:.3f}.")
+    bat_raw, bowl_raw = b2["raw strike rate"], w2["raw economy (negated)"]
+    bat_word = "beats" if b2["v2 chosen"] > bat_raw else "does not beat"
+    bowl_word = "beats" if w2["v2 chosen"] > bowl_raw else "does not beat"
+    A(f"- Against the naive benchmarks, V2 {bat_word} raw pressure strike rate for batters "
+      f"({b2['v2 chosen']:.3f} vs {bat_raw:.3f}) and {bowl_word} raw pressure economy for bowlers "
+      f"({w2['v2 chosen']:.3f} vs {bowl_raw:.3f}). The bowlers' result is a real limitation of this challenger.")
     d_b = {k: b2["reference"] - b2[k] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
     d_w = {k: w2["reference"] - w2[k] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
-    se_b, se_w = c[(c.role == "bat") & (c.method == "reference")].se.iloc[0], c[(c.role == "bowl") & (c.method == "reference")].se.iloc[0]
-    A(f"- For batters, leverage weighting adds {d_b['unweighted level (alpha 0)']:.3f} and shrinkage adds {d_b['almost no shrinkage (lam 30)']:.3f} "
-      f"(each about {d_b['unweighted level (alpha 0)'] / se_b:.1f} to {d_b['almost no shrinkage (lam 30)'] / se_b:.1f} standard errors of a single mean, a loose guide).")
-    A(f"- For bowlers, the same two ingredients add {d_w['unweighted level (alpha 0)']:.3f} and {d_w['almost no shrinkage (lam 30)']:.3f} on the "
-      "confirmation trials, which is within noise. Leverage weighting did win clearly on the tuning trials (section 3, "
-      "z = 3.0), so it stays, but this is weaker evidence for bowlers than for batters.")
-    A(f"- What did help bowlers on the confirmation trials is the pair of choices made in tuning (no recency decay, full weight for all "
-      f"opposition): {w2['v2 chosen']:.3f} against {w2['reference']:.3f} for the reference setup.")
-    A(f"- The size of the effect is modest and should not be oversold: a correlation of about {b2['v2 chosen']:.2f} for batters and "
-      f"{w2['v2 chosen']:.2f} for bowlers. Pressure performance is only partly predictable from past pressure performance. "
-      "Batters are much harder to predict than bowlers.\n")
+    A(f"- For batters, the confirmation results are mixed: the unweighted variant is {d_b['unweighted level (alpha 0)']:+.3f} "
+      f"relative to the reference, while the almost-unshrunk variant is {d_b['almost no shrinkage (lam 30)']:+.3f}.")
+    A(f"- For bowlers, the unweighted variant is {d_w['unweighted level (alpha 0)']:+.3f} and the almost-unshrunk variant "
+      f"is {d_w['almost no shrinkage (lam 30)']:+.3f} relative to the reference. These comparisons are descriptive; "
+      "the confirmation windows do not select the model.")
+    A(f"- The selected V2 score is {b2['v2 chosen']:.3f} for batters and {w2['v2 chosen']:.3f} for bowlers, versus "
+      f"{b2['reference']:.3f} and {w2['reference']:.3f} for the reference configuration. The gains are modest and "
+      "uncertain. Pressure performance is only partly predictable from past pressure performance.\n")
     A("## 5. How the lists compare with earlier builds\n")
     for label in ("batters", "bowlers"):
         v, q, o = set(top[label].player_id), set(prev[label].player_id), set(p1[label].player_id)
