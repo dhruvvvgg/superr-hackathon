@@ -28,6 +28,7 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
     historical training window without using any labels from the scored fold.
     """
     from sklearn.linear_model import LogisticRegression
+    from sklearn.isotonic import IsotonicRegression
 
     pred = np.full(len(y), np.nan)
     raw_pred = np.full(len(y), np.nan)
@@ -78,10 +79,19 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
                 counts = pd.Series(ids_inn).value_counts()
                 match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
                 match_weights *= len(match_weights) / match_weights.sum()
-                calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
-                calibrator.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
-                if float(calibrator.coef_[0, 0]) > 0:
+                if calibration_source == "prior_fold_oof":
+                    # The expanding OOF window is large enough for a monotone,
+                    # non-parametric map. This corrects asymmetric tail errors that
+                    # a one-slope Platt map cannot represent, without using test labels.
+                    calibrator = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+                    calibrator.fit(p_cal[im], cal_y[im], sample_weight=match_weights)
                     calibrators[inn] = calibrator
+                else:
+                    # Small warm-up holdouts retain the lower-variance Platt map.
+                    calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                    calibrator.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
+                    if float(calibrator.coef_[0, 0]) > 0:
+                        calibrators[inn] = calibrator
 
         # Save raw predictions before attaching the fold-local calibration mapping.
         raw_test = mdl.predict(F[te].reset_index(drop=True))
@@ -104,7 +114,8 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
             calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
-            calibration_method="match_weighted_platt",
+            calibration_method=("match_weighted_isotonic" if calibration_source == "prior_fold_oof"
+                                else "match_weighted_platt"),
             calibration_source=calibration_source,
         ))
     return (pred, models, audit)
