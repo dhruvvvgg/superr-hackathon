@@ -149,12 +149,18 @@ def test_no_match_scored_by_a_model_that_saw_it():
     audit = pd.DataFrame(pk["calibration_audit"])
     assert len(audit) == len(pk["fold_values"])
     assert (audit.calibration_matches <= audit.train_matches).all()
-    assert (audit.model_fit_matches + audit.calibration_matches == audit.train_matches).all()
     assert (audit.calibration_matches_outside_train == 0).all()
     assert (audit.calibration_matches_in_test == 0).all()
+    warmup_audit = audit[audit.fold < 0]
     forward_audit = audit[audit.fold >= 0]
+    assert (warmup_audit.model_fit_matches + warmup_audit.calibration_matches ==
+            warmup_audit.train_matches).all()
+    assert warmup_audit.calibration_source.eq("warmup_holdout").all()
+    assert (forward_audit.model_fit_matches == forward_audit.train_matches).all()
+    assert (forward_audit.calibration_matches == forward_audit.train_matches).all()
+    assert forward_audit.calibration_source.eq("prior_fold_oof").all()
     assert (forward_audit.future_calibration_matches == 0).all()
-    assert (pd.to_datetime(forward_audit.model_fit_max_date) <
+    assert (pd.to_datetime(forward_audit.model_fit_max_date) ==
             pd.to_datetime(forward_audit.calibration_max_date)).all()
     assert (pd.to_datetime(forward_audit.calibration_max_date) <
             pd.to_datetime(forward_audit.test_min_date)).all()
