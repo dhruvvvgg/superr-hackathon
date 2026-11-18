@@ -142,8 +142,11 @@ class WPModel:
             mask = innings == inn
             if mask.any():
                 p = np.clip(out[mask], 1e-5, 1 - 1e-5)
-                z = np.log(p / (1.0 - p)).reshape(-1, 1)
-                out[mask] = calibrator.predict_proba(z)[:, 1]
+                if hasattr(calibrator, "predict_proba"):
+                    z = np.log(p / (1.0 - p)).reshape(-1, 1)
+                    out[mask] = calibrator.predict_proba(z)[:, 1]
+                else:
+                    out[mask] = calibrator.predict(p)
         return np.clip(out, 1e-6, 1 - 1e-6)
 
     def predict(self, F):
