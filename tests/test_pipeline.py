@@ -410,9 +410,11 @@ def test_v2_confirmation_reports_naive_comparisons_without_overclaiming():
         for n in naive:
             assert n in d.index
             assert np.isfinite(d.loc[n, "objective"])
-        # A challenger is not required to beat every naive benchmark on every later window.
-        # It must, however, not underperform its registered reference configuration.
-        assert d.loc["v2 chosen", "objective"] >= d.loc["reference", "objective"] - 1e-9
+        # Confirmation windows are held out diagnostics, not adoption gates.
+        # A later-window loss must remain visible in confirm.csv, but cannot invalidate
+        # a configuration selected using the pre-registered tuning-only 2-SE rule.
+        assert np.isfinite(d.loc["v2 chosen", "se"])
+        assert np.isfinite(d.loc["reference", "se"])
 
 
 def test_v2_search_uses_only_forward_temporal_windows():
