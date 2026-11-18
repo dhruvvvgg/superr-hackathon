@@ -21,16 +21,16 @@ def match_folds(match_ids, match_dates, n_folds, seed):
 
 
 def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=None, keep=False):
-    """Out-of-fold predictions with match-weighted, per-innings beta calibration.
+    """Out-of-fold predictions with match-weighted, per-innings Platt calibration.
 
-    Calibration is learned from held-out training matches. Every match receives equal total
-    calibration weight, preventing long matches from dominating the mapping. Forward folds
-    reserve the latest 20% of training matches; warm-up folds use a deterministic peer split.
-    Neither the scored fold nor its labels enter either fit.
+    Warm-up folds use a held-out calibration subset. Forward folds calibrate on raw,
+    out-of-fold predictions from all prior folds, so the calibration fit uses the full
+    historical training window without using any labels from the scored fold.
     """
     from sklearn.linear_model import LogisticRegression
 
     pred = np.full(len(y), np.nan)
+    raw_pred = np.full(len(y), np.nan)
     models = []
     audit = []
     match_ids = np.asarray(match_ids)
@@ -40,50 +40,49 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
         if not tr.any() or not te.any():
             raise ValueError(f"Empty train/test split for fold {k}")
         train_matches = np.unique(match_ids[tr])
-        if k >= 0:
-            md = pd.DataFrame({"match_id": match_ids[tr], "date": dates[tr]}).drop_duplicates("match_id")
-            ordered = md.sort_values(["date", "match_id"]).match_id.to_numpy()
-            cal_matches = ordered[-max(1, int(np.ceil(0.20 * len(ordered)))):]
-        else:
+        if k < 0:
             rng = np.random.RandomState(SEED + abs(int(k)))
             shuffled = rng.permutation(train_matches)
             cal_matches = shuffled[:max(1, int(np.ceil(0.20 * len(shuffled))))]
-        cal = tr & np.isin(match_ids, cal_matches)
-        fit = tr & ~cal
+            cal = tr & np.isin(match_ids, cal_matches)
+            fit = tr & ~cal
+            if not fit.any() or not cal.any():
+                raise ValueError(f"Empty warm-up model/calibration split for fold {k}")
+            mdl = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
+            p_cal = np.clip(mdl.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
+            calibration_source = "warmup_holdout"
+        else:
+            # Prior folds have already been scored by models that did not see them.
+            # Their raw predictions provide a leakage-safe calibration sample.
+            cal = tr.copy()
+            fit = tr
+            cal_matches = train_matches
+            if not np.isfinite(raw_pred[cal]).all():
+                raise AssertionError(f"Missing prior-fold OOF predictions in calibration sample for fold {k}")
+            p_cal = np.clip(raw_pred[cal], 1e-5, 1 - 1e-5)
+            mdl = WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
+            calibration_source = "prior_fold_oof"
+
         calibrators = {}
-        pilot = None
-        if fit.any() and cal.any():
-            pilot = WPModel(kind, params).fit(F[fit].reset_index(drop=True), y[fit], rem[fit])
-            p_cal = np.clip(pilot.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
-            z_cal = np.log(p_cal / (1.0 - p_cal)).reshape(-1, 1)
-            cal_innings = F.loc[cal, "innings"].to_numpy()
-            cal_ids = match_ids[cal]
-            cal_y = y[cal]
-            for inn in (1, 2):
-                im = cal_innings == inn
-                if im.sum() and np.unique(cal_y[im]).size == 2 and np.unique(cal_ids[im]).size >= 10:
-                    ids_inn = cal_ids[im]
-                    counts = pd.Series(ids_inn).value_counts()
-                    match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
-                    match_weights *= len(match_weights) / match_weights.sum()
-                    # Beta calibration is a smooth two-parameter mapping that can correct
-                    # asymmetric tail errors that a single Platt slope cannot represent.
-                    p_i = np.clip(p_cal[im], 1e-5, 1 - 1e-5)
-                    beta_x = np.column_stack([np.log(p_i), -np.log1p(-p_i)])
-                    beta = LogisticRegression(C=10.0, solver="lbfgs", max_iter=2000)
-                    beta.fit(beta_x, cal_y[im], sample_weight=match_weights)
-                    beta_coef = beta.coef_[0]
-                    if np.all(beta_coef > 0):
-                        calibrators[inn] = ("beta", beta)
-                    else:
-                        # Keep a monotone fallback if the flexible beta fit is not monotone.
-                        platt = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
-                        platt.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
-                        if float(platt.coef_[0, 0]) > 0:
-                            calibrators[inn] = ("platt", platt)
-        # Keep the same base estimator that generated calibration predictions. Refitting on
-        # calibration matches shifts the score distribution and invalidates the learned mapping.
-        mdl = pilot if pilot is not None else WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
+        z_cal = np.log(p_cal / (1.0 - p_cal)).reshape(-1, 1)
+        cal_innings = F.loc[cal, "innings"].to_numpy()
+        cal_ids = match_ids[cal]
+        cal_y = y[cal]
+        for inn in (1, 2):
+            im = cal_innings == inn
+            if im.sum() and np.unique(cal_y[im]).size == 2 and np.unique(cal_ids[im]).size >= 10:
+                ids_inn = cal_ids[im]
+                counts = pd.Series(ids_inn).value_counts()
+                match_weights = 1.0 / counts.reindex(ids_inn).to_numpy(dtype=float)
+                match_weights *= len(match_weights) / match_weights.sum()
+                calibrator = LogisticRegression(C=1e6, solver="lbfgs", max_iter=2000)
+                calibrator.fit(z_cal[im], cal_y[im], sample_weight=match_weights)
+                if float(calibrator.coef_[0, 0]) > 0:
+                    calibrators[inn] = calibrator
+
+        # Save raw predictions before attaching the fold-local calibration mapping.
+        raw_test = mdl.predict(F[te].reset_index(drop=True))
+        raw_pred[te] = raw_test
         mdl.calibrators = calibrators
         pred[te] = mdl.predict(F[te].reset_index(drop=True))
         models.append(mdl)
@@ -97,14 +96,13 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             calibration_matches_outside_train=int(len(set(cal_matches) - set(train_matches))),
             calibration_matches_in_test=int(len(set(cal_matches) & set(np.unique(match_ids[te])))),
             train_max_date=pd.Timestamp(train_dates.max()).date().isoformat(),
-            model_fit_max_date=pd.Timestamp(dates[fit].max() if pilot is not None else train_dates.max()).date().isoformat(),
+            model_fit_max_date=pd.Timestamp(dates[fit].max()).date().isoformat(),
             calibration_max_date=pd.Timestamp(cal_dates.max()).date().isoformat(),
             test_min_date=pd.Timestamp(test_dates.min()).date().isoformat(),
             future_calibration_matches=int(np.unique(match_ids[cal & (dates >= test_dates.min())]).size),
             calibrated_innings=";".join(str(i) for i in sorted(calibrators)),
-            calibration_method=";".join(
-                f"{inn}:{method[0]}" for inn, method in sorted(calibrators.items())
-            ) or "none",
+            calibration_method="match_weighted_platt",
+            calibration_source=calibration_source,
         ))
     return (pred, models, audit)
 
