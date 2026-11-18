@@ -163,8 +163,8 @@ def main():
     A(f"- Against the naive benchmarks, V2 {bat_word} raw pressure strike rate for batters "
       f"({b2['v2 chosen']:.3f} vs {bat_raw:.3f}) and {bowl_word} raw pressure economy for bowlers "
       f"({w2['v2 chosen']:.3f} vs {bowl_raw:.3f}). The bowlers' result is a real limitation of this challenger.")
-    d_b = {k: b2["reference"] - b2[k] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
-    d_w = {k: w2["reference"] - w2[k] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
+    d_b = {k: b2[k] - b2["reference"] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
+    d_w = {k: w2[k] - w2["reference"] for k in ("unweighted level (alpha 0)", "almost no shrinkage (lam 30)")}
     A(f"- For batters, the confirmation results are mixed: the unweighted variant is {d_b['unweighted level (alpha 0)']:+.3f} "
       f"relative to the reference, while the almost-unshrunk variant is {d_b['almost no shrinkage (lam 30)']:+.3f}.")
     A(f"- For bowlers, the unweighted variant is {d_w['unweighted level (alpha 0)']:+.3f} and the almost-unshrunk variant "
