@@ -52,12 +52,15 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             p_cal = np.clip(mdl.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
             calibration_source = "warmup_holdout"
         else:
-            # Prior folds have already been scored by models that did not see them.
-            # Their raw predictions provide a leakage-safe calibration sample.
-            cal = tr.copy()
+            # Calibrate against the most recent available OOF fold. Pooling every
+            # historical fold mixes predictions from models trained on very different
+            # sample sizes; the resulting mapping can be miscalibrated for the current
+            # expanding-window model. Fold 0 has only warm-up OOF predictions available,
+            # so it uses all warm-up folds. Later folds use the immediately prior fold.
+            cal = tr.copy() if k == 0 else (tr & (fold == k - 1))
             fit = tr
-            cal_matches = train_matches
-            if not np.isfinite(raw_pred[cal]).all():
+            cal_matches = np.unique(match_ids[cal])
+            if not cal.any() or not np.isfinite(raw_pred[cal]).all():
                 raise AssertionError(f"Missing prior-fold OOF predictions in calibration sample for fold {k}")
             p_cal = np.clip(raw_pred[cal], 1e-5, 1 - 1e-5)
             mdl = WPModel(kind, params).fit(F[tr].reset_index(drop=True), y[tr], rem[tr])
