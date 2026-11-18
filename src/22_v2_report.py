@@ -178,14 +178,14 @@ def main():
         v, q, o = set(top[label].player_id), set(prev[label].player_id), set(p1[label].player_id)
         A(f"- {label.capitalize()}: {len(v & q)} of 10 players are the same as the phase 3 list in `docs/FINDINGS.md`; "
           f"{len(v & o)} of 10 are the same as the first build.")
-    for label in ("bowlers",):
-        v, q = top[label], prev[label]
-        A(f"  - New in V2 against phase 3: {', '.join(v[~v.player_id.isin(q.player_id)].player_name) or 'none'}; "
-          f"dropped: {', '.join(q[~q.player_id.isin(v.player_id)].player_name) or 'none'}. The difference comes from the bowler "
-          "recency decision above: without a decay, bowlers whose best form is older are no longer discounted.")
-    A("")
-    A("Two designs reached the same batter set. That is the strongest robustness evidence in this repository, "
-      "stronger than any single interval.\n")
+    v, q = top["bowlers"], prev["bowlers"]
+    A(f"- New in V2 against phase 3: {', '.join(v[~v.player_id.isin(q.player_id)].player_name) or 'none'}; "
+      f"dropped: {', '.join(q[~q.player_id.isin(v.player_id)].player_name) or 'none'}. The V2 challenger uses a "
+      "different predictive objective and selected configuration, so these differences are model-dependent rather "
+      "than manual changes to the primary shortlist.")
+    bat_overlap = len(set(top["batters"].player_id) & set(prev["batters"].player_id))
+    A(f"V2 and the primary ranking share {bat_overlap} of 10 batter selections. This is useful overlap, but not "
+      "identity of the two lists and not independent validation.\n")
     A("## 6. Limits\n")
     A("- Held-out correlations are small. A rank is a best estimate; the intervals in section 1 are wide for ranks 6 to 10.")
     A("- Baselines, win probability and pressure flags were fitted on all matches (identity-free models). Strictly, "
