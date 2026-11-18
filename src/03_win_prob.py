@@ -52,12 +52,12 @@ def oof_predict(kind, F, y, fold, n_folds, rem, match_ids, match_dates, params=N
             p_cal = np.clip(mdl.predict(F[cal].reset_index(drop=True)), 1e-5, 1 - 1e-5)
             calibration_source = "warmup_holdout"
         else:
-            # Calibrate against the most recent available OOF fold. Pooling every
-            # historical fold mixes predictions from models trained on very different
-            # sample sizes; the resulting mapping can be miscalibrated for the current
-            # expanding-window model. Fold 0 has only warm-up OOF predictions available,
-            # so it uses all warm-up folds. Later folds use the immediately prior fold.
-            cal = tr.copy() if k == 0 else (tr & (fold == k - 1))
+            # Use every strictly prior match with an out-of-fold raw prediction.
+            # Each calibration label belongs to a match excluded from the model that
+            # generated its raw prediction, and all such matches precede this test fold.
+            # Pooling the complete historical window follows D-75 and avoids the
+            # high-variance calibration fit caused by using only one preceding fold.
+            cal = tr.copy()
             fit = tr
             cal_matches = np.unique(match_ids[cal])
             if not cal.any() or not np.isfinite(raw_pred[cal]).all():
